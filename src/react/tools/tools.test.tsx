@@ -51,7 +51,7 @@ test("diff preview shows gutter symbols as text", () => {
   fireEvent.click(screen.getByRole("button", { name: "Show preview" }));
   const d = screen.getByTestId("tool-preview-diff").textContent!;
   expect(d).toContain("− a");
-  expect(d).toContain("+b");
+  expect(d).toContain("+ b");
 });
 
 test("single call renders a ToolRow, no group", () => {
