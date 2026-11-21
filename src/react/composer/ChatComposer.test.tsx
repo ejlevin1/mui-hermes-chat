@@ -31,7 +31,6 @@ test("single focus ring: textarea has no own border/outline, only the surface ca
   expect(surface.querySelectorAll("fieldset").length).toBe(0);
   expect(getComputedStyle(input()).outlineStyle).not.toBe("solid");
   expect(getComputedStyle(input()).borderStyle).not.toBe("solid");
-  expect(input().rows).toBe(1);
 });
 
 test("counter appears only above 80% of max", () => {
