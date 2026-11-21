@@ -23,6 +23,14 @@ describe("bubbleSlotProps", () => {
     expect(content().justifySelf).toBe("start");
     expect((content()["& .MuiChatMessage-bubble"] as Record<string, unknown>).bgcolor).toBe("action.hover");
   });
+  test("avatar track stays fixed (not auto) so grouped follow-up messages keep their column", () => {
+    const r = root();
+    const base = r["&&"] as Record<string, string>;
+    expect(base.gridTemplateColumns).toBe(`${theme.spacing(4)} minmax(0, 1fr)`);
+    expect(base["--MuiChatMessage-avatarSize"]).toBe(theme.spacing(4));
+    expect((r["&&.MuiChatMessage-roleUser"] as Record<string, string>).gridTemplateColumns).toBe(`minmax(0, 1fr) ${theme.spacing(4)}`);
+    expect(JSON.stringify(r)).not.toContain("auto");
+  });
   test("one rule serves history and live messages (no per-source variant)", () => {
     expect(JSON.stringify(bubbleSlotProps(theme))).not.toMatch(/history|live/);
   });

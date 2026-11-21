@@ -1,41 +1,40 @@
-/** Round "jump to latest" button, centred above the composer; replaces the x-chat scrollToBottom slot. */
+/** Round "jump to latest" button in the composer area; the x-chat scrollToBottom slot only publishes list scroll state to it. */
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Tooltip from "@mui/material/Tooltip";
+import { useEffect } from "react";
 import { useMessageListContext } from "@mui/x-chat-headless";
 import { defaultComposerLabels, type ComposerLabels } from "./labels";
 
-export function JumpToLatest({ labels }: { labels?: Partial<ComposerLabels> }) {
+export interface JumpState { isAtBottom: boolean; unseenMessageCount: number; scrollToBottom: (o?: { behavior?: "smooth" | "auto" }) => void }
+
+/** Presentational button: rendered in the composer area, in flow above the composer (never over message text). */
+export function JumpButton({ labels, state }: { labels?: Partial<ComposerLabels>; state: JumpState | null }) {
   const l = { ...defaultComposerLabels, ...labels };
-  const { isAtBottom, unseenMessageCount, scrollToBottom } = useMessageListContext();
-  if (isAtBottom) return null;
-  const fresh = unseenMessageCount > 0;
+  if (!state || state.isAtBottom) return null;
+  const fresh = state.unseenMessageCount > 0;
   return (
-    // zero-height sticky row at the bottom of the list area: the button sits in flow above the composer
-    <Box data-testid="jump-to-latest" sx={{ position: "sticky", bottom: 0, height: 0, display: "flex", justifyContent: "center", overflow: "visible", pointerEvents: "none" }}>
+    <Box data-testid="jump-to-latest" sx={{ display: "flex", justifyContent: "center", pb: 1 }}>
       <Tooltip title={l.jumpToLatest}>
         <Button
           variant="contained"
           color="inherit"
           aria-label={l.jumpToLatest}
-          onClick={() => scrollToBottom({ behavior: "smooth" })}
+          onClick={() => state.scrollToBottom({ behavior: "smooth" })}
           startIcon={fresh ? <KeyboardArrowDown /> : undefined}
-          sx={{
-            pointerEvents: "auto",
-            position: "absolute",
-            bottom: (t) => t.spacing(1),
-            borderRadius: 4,
-            minWidth: 0,
-            bgcolor: "background.paper",
-            color: "text.primary",
-            border: 1,
-            borderColor: "divider",
-          }}
+          sx={{ borderRadius: 4, minWidth: 0, bgcolor: "background.paper", color: "text.primary", border: 1, borderColor: "divider" }}
         >
           {fresh ? l.newMessages : <KeyboardArrowDown />}
         </Button>
       </Tooltip>
     </Box>
   );
+}
+
+/** Reads the list scroll state (only available inside the message list) and hands it to `publish`; renders nothing. */
+export function JumpToLatest({ publish }: { labels?: Partial<ComposerLabels>; publish?: (s: JumpState) => void }) {
+  const { isAtBottom, unseenMessageCount, scrollToBottom } = useMessageListContext();
+  useEffect(() => { publish?.({ isAtBottom, unseenMessageCount, scrollToBottom }); }, [publish, isAtBottom, unseenMessageCount, scrollToBottom]);
+  return null;
 }

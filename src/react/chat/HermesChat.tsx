@@ -68,8 +68,11 @@ type PanelProps = HermesChatProps & { fitHeight: boolean };
 
 const CONVERSATION = "hermes";
 
-/** Default `bubbleOppositeGap`: the small avatar (spacing 4) plus the gutter (spacing 1). */
-export const AVATAR_COLUMN = (theme: Theme) => theme.spacing(5);
+/** Small avatar column (= ParticipantAvatar sm: `spacing(dim * 2)`, dim 2) and the gutter between avatar and bubble. */
+const AVATAR_SPACING = 4;
+const GUTTER_SPACING = 1;
+/** Default `bubbleOppositeGap`: avatar + gutter. */
+export const AVATAR_COLUMN = (theme: Theme) => theme.spacing(AVATAR_SPACING + GUTTER_SPACING);
 
 /** x-chat message slot styling: content-sized bubbles, capped at thread − own column − opposite column. */
 export function bubbleSlotProps(theme: Theme, oppositeGap?: number | string) {
@@ -77,8 +80,9 @@ export function bubbleSlotProps(theme: Theme, oppositeGap?: number | string) {
   return {
     messageRoot: {
       sx: {
-        "&&": { gridTemplateColumns: "auto minmax(0, 1fr)", columnGap: theme.spacing(1), paddingInline: theme.spacing(1.5), paddingBlock: `0 ${theme.spacing(1.5)}`, alignItems: "start" },
-        "&&.MuiChatMessage-roleUser": { gridTemplateColumns: "minmax(0, 1fr) auto" },
+        // fixed avatar track: grouped (follow-up) messages keep an empty cell of the same width (x-chat sizes it by this var)
+        "&&": { "--MuiChatMessage-avatarSize": theme.spacing(AVATAR_SPACING), gridTemplateColumns: `${theme.spacing(AVATAR_SPACING)} minmax(0, 1fr)`, columnGap: theme.spacing(GUTTER_SPACING), paddingInline: theme.spacing(1.5), paddingBlock: `0 ${theme.spacing(1.5)}`, alignItems: "start" },
+        "&&.MuiChatMessage-roleUser": { gridTemplateColumns: `minmax(0, 1fr) ${theme.spacing(AVATAR_SPACING)}` },
         "&.MuiChatMessage-roleUser .MuiChatMessage-content": { justifySelf: "end" },
         "&.MuiChatMessage-roleUser .MuiChatMessage-bubble": { bgcolor: "primary.main", color: "primary.contrastText" },
       },
