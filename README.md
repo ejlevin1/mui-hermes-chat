@@ -51,6 +51,8 @@ import { HermesChat } from "mui-hermes-chat";
 | `fit?` | `{ minHeight?, bottomGap? }` | fit the card to the viewport (theme spacing units) |
 | `bubbleOppositeGap?` | `number \| string` | min gap on the side opposite the avatar; default avatar size + gutter |
 | `toolbarActions?` | `ReactNode` | extra toolbar content |
+| `onStreamLost?` | `(info: { code: "network" \| "detached" }) => void` | called once when a turn's stream is lost; see [Long turns](#long-turns) |
+| `resetKey?` | `string \| number` | when it changes after mount, the conversation re-initialises from the current `history` |
 
 ## Labels
 Pass `labels={{ newChat: "Neuer Chat", ... }}`. Keys come from `ChatLabels` (chat, composer, tools and session-info
@@ -78,6 +80,28 @@ reply, error, end` are unchanged; unknown fields and frames are ignored, so a v1
 | `commentary` | `text`: interim note shown muted, never the final answer |
 
 Server redacts secrets before clipping; nothing here is rendered as html.
+
+## Long turns
+A turn can outlive its HTTP stream. The server may send `: keepalive` SSE comment lines between frames (the parser
+skips them) and, when the relay's idle cap hits, an `error` frame with `code: "detached"`: the run continues
+server-side. If the stream ends without `reply`/`error`/`end` (network drop) or arrives `detached`, the chat keeps the
+user's message, shows an info note (label `stillWorking`: "Hermes is still working on this. The answer will appear
+here when it's done.") and calls `onStreamLost({ code: "network" | "detached" })` once. Any other `error` code, an HTTP
+error before the stream starts (e.g. 409 `turn_in_progress`), a request that fails before any response (offline, DNS: the server never got the turn, so the "connection lost, send again" note) and a user abort behave as before.
+
+Recipe: while the server says a turn is running, poll your read model; when it ends, bump `resetKey` with the fresh
+`history`. The conversation re-initialises from `history` at the newest message and the note is gone.
+
+```tsx
+const [running, setRunning] = useState(false);
+const [resetKey, setResetKey] = useState(0);
+// your code: `polled` is true once a poll has returned after `running` became true (reset it when running flips)
+const { history, turnRunning, polled } = usePolledReadModel(running);
+useEffect(() => { if (running && polled && !turnRunning) { setRunning(false); setResetKey((k) => k + 1); } }, [running, polled, turnRunning]);
+<HermesChat {...props} history={history} resetKey={resetKey} onStreamLost={() => setRunning(true)} />
+```
+
+An unchanged `resetKey` never remounts the chat.
 
 ## History paging
 Read model carries the newest page (≤30 user turns) as `history`. `GET <urls.messages>?<target>&cursor=<c>` returns

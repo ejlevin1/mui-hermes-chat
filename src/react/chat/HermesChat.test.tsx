@@ -225,3 +225,62 @@ describe("HermesChat New chat", () => {
     expect(screen.getByRole("button", { name: "Nuevo chat" })).toBeTruthy();
   });
 });
+
+describe("HermesChat long turns", () => {
+  const send = async () => {
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "go" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+  };
+
+  test("a stream that closes without a final frame: info note, onStreamLost once, no error alert", async () => {
+    handler = (url) => (url === "/t" ? sse([frame({ t: "delta", text: "par" })]) : new Response("{}"));
+    const onStreamLost = vi.fn();
+    ui({ onStreamLost });
+    await send();
+    expect(await screen.findByText("Hermes is still working on this. The answer will appear here when it's done.")).toBeTruthy();
+    expect(onStreamLost).toHaveBeenCalledTimes(1);
+    expect(onStreamLost).toHaveBeenCalledWith({ code: "network" });
+    expect(document.querySelector(".MuiAlert-standardError")).toBeNull();
+    expect(document.body.textContent).not.toContain("send it again");
+  });
+
+  test("error code detached: the same note with code detached; labels override the text", async () => {
+    handler = (url) => (url === "/t" ? sse([frame({ t: "error", code: "detached", text: "idle" })]) : new Response("{}"));
+    const onStreamLost = vi.fn();
+    ui({ onStreamLost, labels: { stillWorking: "Still on it." } });
+    await send();
+    expect(await screen.findByText("Still on it.")).toBeTruthy();
+    expect(onStreamLost).toHaveBeenCalledWith({ code: "detached" });
+    expect(onStreamLost).toHaveBeenCalledTimes(1);
+    expect(document.querySelector(".MuiAlert-standardError")).toBeNull();
+  });
+
+  test("another error code keeps the error alert", async () => {
+    handler = (url) => (url === "/t" ? sse([frame({ t: "error", code: "boom", text: "It broke" })]) : new Response("{}"));
+    const onStreamLost = vi.fn();
+    ui({ onStreamLost });
+    await send();
+    expect(await screen.findByText("It broke")).toBeTruthy();
+    expect(onStreamLost).not.toHaveBeenCalled();
+  });
+
+  test("resetKey change shows the newer history page and drops the note; same key does not remount", async () => {
+    handler = (url) => (url === "/t" ? sse([frame({ t: "delta", text: "par" })]) : new Response("{}"));
+    const first = { messages: [msg("m1", "user", "hello")], cursor: null, hasMore: false };
+    const second = { messages: [msg("m1", "user", "hello"), msg("m2", "assistant", "Fresh reply")], cursor: null, hasMore: false };
+    const tree = (history: HermesChatProps["history"], resetKey: number) => (
+      <ThemeProvider theme={createTheme()}><HermesChat {...base} history={history} resetKey={resetKey} /></ThemeProvider>
+    );
+    const { rerender } = render(tree(first, 1));
+    await screen.findByText("hello");
+    await send();
+    await screen.findByText(/still working/);
+    rerender(tree(second, 1));
+    expect(screen.queryByText("Fresh reply")).toBeNull();
+    expect(screen.getByText(/still working/)).toBeTruthy();
+    rerender(tree(second, 2));
+    expect(await screen.findByTestId("rendered")).toBeTruthy();
+    expect(screen.getByTestId("rendered").getAttribute("data-html")).toBe("<p>Fresh reply</p>");
+    expect(screen.queryByText(/still working/)).toBeNull();
+  });
+});

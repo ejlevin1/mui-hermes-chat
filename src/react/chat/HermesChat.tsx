@@ -22,7 +22,7 @@ import { visuallyHidden } from "@mui/utils";
 import { ChatBox } from "@mui/x-chat";
 import { useChat, useMessageContext } from "@mui/x-chat/headless";
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { AGENT_AUTHOR_ID, USER_AUTHOR_ID, hermesChatAdapter, toChatMessages } from "../../adapter/adapter";
+import { AGENT_AUTHOR_ID, USER_AUTHOR_ID, hermesChatAdapter, toChatMessages, type StreamLostCode } from "../../adapter/adapter";
 import { sendApproval, startOver } from "../../core/transport";
 import type { ChatUrls, CsrfSource, HermesMessage, HermesToolCall, Participant, SessionInfo, Target } from "../../core/types";
 import { ParticipantAvatar } from "../avatar/ParticipantAvatar";
@@ -60,6 +60,10 @@ export interface HermesChatProps {
   mode?: "inline" | "sheet" | "auto";
   fit?: { minHeight?: number; bottomGap?: number };
   toolbarActions?: ReactNode;
+  /** Called once when a turn's stream is lost (`network`) or detached by the relay (`detached`); the run may continue server-side. */
+  onStreamLost?: (info: { code: StreamLostCode }) => void;
+  /** When it changes after mount, the conversation re-initialises from the current `history` (scrolled to the newest message). */
+  resetKey?: string | number;
   /** Minimum gap on the side opposite a bubble's avatar (CSS length or px). Default: the avatar column (avatar + gutter). */
   bubbleOppositeGap?: number | string;
 }
@@ -142,11 +146,19 @@ function HistoryBar({ labels }: { labels: ChatLabels }) {
 }
 
 function Panel(props: PanelProps) {
-  const { urls, target, csrf, history, renderHtml, participants, session, maxMessage, notice, linkedNote, changed, hasEarlier, earlierHref, onTurnEnd, toolbarActions, fit, fitHeight, bubbleOppositeGap } = props;
+  const { urls, target, csrf, history, renderHtml, participants, session, maxMessage, notice, linkedNote, changed, hasEarlier, earlierHref, onTurnEnd, onStreamLost, resetKey, toolbarActions, fit, fitHeight, bubbleOppositeGap } = props;
   const theme = useTheme();
   const bubbles = useMemo(() => bubbleSlotProps(theme, bubbleOppositeGap), [theme, bubbleOppositeGap]);
   const labels = useMemo<ChatLabels>(() => ({ ...defaultChatLabels, ...props.labels }), [props.labels]);
   const [epoch, setEpoch] = useState(0);
+  // A new `resetKey` re-reads `history` (also after New chat) and remounts the ChatBox below.
+  const [seenReset, setSeenReset] = useState(resetKey);
+  if (seenReset !== resetKey) {
+    setSeenReset(resetKey);
+    setEpoch(0);
+  }
+  const onLost = useRef(onStreamLost);
+  onLost.current = onStreamLost;
   const [error, setError] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [said, setSaid] = useState("");
@@ -157,7 +169,7 @@ function Panel(props: PanelProps) {
   // After New chat the history is gone: an empty first page.
   const page = useMemo(() => (epoch ? { messages: [], cursor: null, hasMore: false } : history), [epoch, history]);
   const adapter = useMemo(
-    () => hermesChatAdapter({ urls, target, csrf, initialPage: page }),
+    () => hermesChatAdapter({ urls, target, csrf, initialPage: page, onStreamLost: (i) => onLost.current?.(i) }),
     [urls, target, csrf, page],
   );
   const initialMessages = useMemo(() => toChatMessages(page.messages), [page]);
@@ -188,7 +200,7 @@ function Panel(props: PanelProps) {
     el.scrollTop = el.scrollHeight;
     const raf = requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; }); // rows are measured after first paint
     return () => cancelAnimationFrame(raf);
-  }, [epoch]);
+  }, [epoch, resetKey]);
 
   const reset = async () => {
     setConfirming(false);
@@ -232,7 +244,7 @@ function Panel(props: PanelProps) {
         </Box>
       )}
       <ChatBox
-        key={epoch}
+        key={`${epoch}:${resetKey ?? ""}`}
         adapter={adapter}
         initialMessages={initialMessages}
         initialActiveConversationId={CONVERSATION}

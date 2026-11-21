@@ -14,6 +14,11 @@ export class ChatHttpError extends Error {
   }
 }
 
+/** The turn stream had started (response OK) but ended or broke before a reply/error frame: the server may still be running the turn. */
+export class StreamLostError extends Error {
+  override name = "StreamLostError";
+}
+
 async function formOnce(url: string, fields: Record<string, string>, accept: string, csrf: CsrfSource, refresh: boolean, signal?: AbortSignal): Promise<Response> {
   const token = await csrf(refresh);
   return fetch(url, {
@@ -57,13 +62,20 @@ export async function runTurn(url: string, target: Target, message: string, onEv
   const reader = res.body.getReader();
   const dec = new TextDecoder();
   for (;;) {
-    const { value, done } = await reader.read();
+    let chunk: ReadableStreamReadResult<Uint8Array>;
+    try {
+      chunk = await reader.read();
+    } catch (err) {
+      if (signal?.aborted) throw err;
+      throw new StreamLostError(err instanceof Error ? err.message : "stream read failed");
+    }
+    const { value, done } = chunk;
     if (done) break;
     parser.push(dec.decode(value, { stream: true }));
   }
   parser.push(dec.decode());
   parser.end();
-  if (!finished) throw new Error("stream ended early");
+  if (!finished) throw new StreamLostError("stream ended early");
 }
 
 export async function sendApproval(

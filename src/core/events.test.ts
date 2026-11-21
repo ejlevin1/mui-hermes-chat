@@ -104,3 +104,14 @@ test("src/core (non-test sources) imports neither react nor @mui", () => {
   expect(Object.keys(srcs).length).toBeGreaterThanOrEqual(5);
   expect(Object.keys(srcs).filter((p) => IMPORTS_UI.test(srcs[p]))).toEqual([]);
 });
+
+test("keepalive-only gaps between frames (comment lines, any split) parse fine", () => {
+  const stream = ": keepalive\n\n" + frame({ t: "delta", text: "a" }) + ":ka\n\n: ka\r\n\r\n" + frame({ t: "reply", text: "a", html: "<p>a</p>" }) + ": keepalive\n\n";
+  for (let n = 1; n <= 7; n++) {
+    const got: ChatEvent[] = [];
+    const p = parseChatEvents((e) => got.push(e));
+    for (let i = 0; i < stream.length; i += n) p.push(stream.slice(i, i + n));
+    p.end();
+    expect(got.map((e) => e.t)).toEqual(["delta", "reply"]);
+  }
+});
