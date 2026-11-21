@@ -2,7 +2,7 @@
 import type { ChatAdapter } from "@mui/x-chat/headless";
 import type { ChatMessage, ChatMessageChunk, ChatMessagePart } from "@mui/x-chat/types";
 import type { ChatEvent, ToolEvent } from "../core/events";
-import { ChatHttpError, fetchHistoryPage, runTurn } from "../core/transport";
+import { ChatHttpError, StreamLostError, fetchHistoryPage, runTurn } from "../core/transport";
 import type { ChatUrls, CsrfSource, HermesMessage, HistoryPage, Target } from "../core/types";
 
 export interface HermesAdapterOptions {
@@ -202,12 +202,12 @@ export function hermesChatAdapter(opts: HermesAdapterOptions): ChatAdapter {
                 c.close();
                 return;
               }
-              if (!(err instanceof ChatHttpError)) {
+              if (err instanceof StreamLostError) {
                 streamLost("network");
                 finish("stop");
                 return;
               }
-              on({ t: "error", text: err.message || opts.networkErrorText || NOTE_NETWORK });
+              on({ t: "error", text: (err instanceof ChatHttpError && err.message) || opts.networkErrorText || NOTE_NETWORK });
               finish("error");
             },
           );

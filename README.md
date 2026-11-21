@@ -87,7 +87,7 @@ skips them) and, when the relay's idle cap hits, an `error` frame with `code: "d
 server-side. If the stream ends without `reply`/`error`/`end` (network drop) or arrives `detached`, the chat keeps the
 user's message, shows an info note (label `stillWorking`: "Hermes is still working on this. The answer will appear
 here when it's done.") and calls `onStreamLost({ code: "network" | "detached" })` once. Any other `error` code, an HTTP
-error before the stream starts (e.g. 409 `turn_in_progress`) and a user abort behave as before.
+error before the stream starts (e.g. 409 `turn_in_progress`), a request that fails before any response (offline, DNS: the server never got the turn, so the "connection lost, send again" note) and a user abort behave as before.
 
 Recipe: while the server says a turn is running, poll your read model; when it ends, bump `resetKey` with the fresh
 `history`. The conversation re-initialises from `history` at the newest message and the note is gone.
@@ -95,8 +95,9 @@ Recipe: while the server says a turn is running, poll your read model; when it e
 ```tsx
 const [running, setRunning] = useState(false);
 const [resetKey, setResetKey] = useState(0);
-const { history, turnRunning } = usePolledReadModel(running); // your code
-useEffect(() => { if (running && !turnRunning) { setRunning(false); setResetKey((k) => k + 1); } }, [running, turnRunning]);
+// your code: `polled` is true once a poll has returned after `running` became true (reset it when running flips)
+const { history, turnRunning, polled } = usePolledReadModel(running);
+useEffect(() => { if (running && polled && !turnRunning) { setRunning(false); setResetKey((k) => k + 1); } }, [running, polled, turnRunning]);
 <HermesChat {...props} history={history} resetKey={resetKey} onStreamLost={() => setRunning(true)} />
 ```
 

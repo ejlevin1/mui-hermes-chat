@@ -1,5 +1,5 @@
 import type { ChatMessage } from "@mui/x-chat/types";
-import { hermesChatAdapter, toChatMessages } from "./adapter";
+import { NOTE_NETWORK, hermesChatAdapter, toChatMessages } from "./adapter";
 import type { HermesMessage, HistoryPage } from "../core/types";
 
 const enc = new TextEncoder();
@@ -179,12 +179,29 @@ describe("sendMessage", () => {
     expect(onStreamLost).toHaveBeenCalledWith({ code: "network" });
   });
 
-  test("a network failure is a lost stream (NOTE_NETWORK is no longer shown)", async () => {
+  test("a fetch that rejects before any response is a failed turn (NOTE_NETWORK), not a lost stream", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => Promise.reject(new TypeError("fetch failed"))));
     const onStreamLost = vi.fn();
     const c = await chunks(undefined, { onStreamLost });
-    expect(types(c)).not.toContain("data-error");
-    expect(c.find((x) => x.type === "data-stream-lost")).toBeTruthy();
+    expect(types(c)).not.toContain("data-stream-lost");
+    expect(c.find((x) => x.type === "data-error")!.data).toMatchObject({ text: NOTE_NETWORK });
+    expect(onStreamLost).not.toHaveBeenCalled();
+  });
+
+  test("a pre-response failure uses networkErrorText when given", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Promise.reject(new TypeError("fetch failed"))));
+    const c = await chunks(undefined, { networkErrorText: "Offline." });
+    expect(c.find((x) => x.type === "data-error")!.data).toMatchObject({ text: "Offline." });
+  });
+
+  test("a read error after an OK response is a lost stream", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      const body = new ReadableStream({ pull(ctl) { ctl.error(new TypeError("network error")); } });
+      return new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+    }));
+    const onStreamLost = vi.fn();
+    const c = await chunks(undefined, { onStreamLost });
+    expect(c.find((x) => x.type === "data-stream-lost")!.data).toEqual({ code: "network" });
     expect(onStreamLost).toHaveBeenCalledTimes(1);
   });
 

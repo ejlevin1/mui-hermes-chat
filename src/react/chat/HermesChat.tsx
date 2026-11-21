@@ -22,7 +22,7 @@ import { visuallyHidden } from "@mui/utils";
 import { ChatBox } from "@mui/x-chat";
 import { useChat, useMessageContext } from "@mui/x-chat/headless";
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { AGENT_AUTHOR_ID, USER_AUTHOR_ID, hermesChatAdapter, toChatMessages } from "../../adapter/adapter";
+import { AGENT_AUTHOR_ID, USER_AUTHOR_ID, hermesChatAdapter, toChatMessages, type StreamLostCode } from "../../adapter/adapter";
 import { sendApproval, startOver } from "../../core/transport";
 import type { ChatUrls, CsrfSource, HermesMessage, HermesToolCall, Participant, SessionInfo, Target } from "../../core/types";
 import { ParticipantAvatar } from "../avatar/ParticipantAvatar";
@@ -61,7 +61,7 @@ export interface HermesChatProps {
   fit?: { minHeight?: number; bottomGap?: number };
   toolbarActions?: ReactNode;
   /** Called once when a turn's stream is lost (`network`) or detached by the relay (`detached`); the run may continue server-side. */
-  onStreamLost?: (info: { code: "network" | "detached" }) => void;
+  onStreamLost?: (info: { code: StreamLostCode }) => void;
   /** When it changes after mount, the conversation re-initialises from the current `history` (scrolled to the newest message). */
   resetKey?: string | number;
   /** Minimum gap on the side opposite a bubble's avatar (CSS length or px). Default: the avatar column (avatar + gutter). */
