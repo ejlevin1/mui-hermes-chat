@@ -2,9 +2,9 @@ import { avatarColor, initials } from "./initials";
 import { ACCENTS } from "./types";
 
 test.each([
-  ["Eric LeVin", "EL"],
-  ["eric@x.me", "ER"],
-  ["eric.levin@x.me", "EL"],
+  ["Ada LoveLace", "AL"],
+  ["ada@x.me", "AD"],
+  ["ada.lovelace@x.me", "AL"],
   ["card-chat", "CC"],
   ["hostbot", "HO"],
   ["  a  b  ", "AB"],
