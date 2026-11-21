@@ -31,7 +31,7 @@ const base: HermesChatProps = {
   csrf: async () => "tok",
   history: { messages: [], cursor: null, hasMore: false },
   renderHtml: (html: string): ReactNode => <div data-testid="rendered" data-html={html} />,
-  participants: { user: { name: "Eric Levin" }, agent: { name: "Jarvis", initials: "JV" } },
+  participants: { user: { name: "Ada Lovelace" }, agent: { name: "Hermes", initials: "HE" } },
   mode: "inline",
 };
 const ui = (p: Partial<HermesChatProps> = {}) => render(<ThemeProvider theme={createTheme()}><HermesChat {...base} {...p} /></ThemeProvider>);
@@ -67,7 +67,7 @@ describe("HermesChat layout", () => {
 
   test("toolbar: agent name, New chat icon button, Info only with a session", () => {
     const { unmount } = ui();
-    expect(screen.getByText("Jarvis")).toBeTruthy();
+    expect(screen.getByText("Hermes")).toBeTruthy();
     expect(screen.getByRole("button", { name: "New chat" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Session info" })).toBeNull();
     unmount();
@@ -97,14 +97,14 @@ describe("HermesChat history", () => {
     expect(await screen.findByText("hi")).toBeTruthy();
     expect(screen.getByTestId("rendered").getAttribute("data-html")).toBe("<p>yo</p>");
     expect(document.querySelector("[inner-html], [dangerouslysetinnerhtml]")).toBeNull();
-    await waitFor(() => expect(screen.getAllByLabelText("Eric Levin").length).toBeGreaterThan(0));
-    expect(screen.getAllByLabelText("Jarvis").length).toBeGreaterThan(1); // toolbar + message
+    await waitFor(() => expect(screen.getAllByLabelText("Ada Lovelace").length).toBeGreaterThan(0));
+    expect(screen.getAllByLabelText("Hermes").length).toBeGreaterThan(1); // toolbar + message
   });
 
   test("author line is visually hidden but present for screen readers", async () => {
     ui({ history });
     await screen.findByText("hi");
-    expect(screen.getAllByText(/Eric Levin|Jarvis/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Ada Lovelace|Hermes/).length).toBeGreaterThan(0);
   });
 
   test("opens scrolled to the newest message", async () => {
