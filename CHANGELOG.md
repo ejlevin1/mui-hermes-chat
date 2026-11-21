@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0 (2026-11-21)
+- iMessage-style bubbles: both sides size to their content and grow up to thread width minus own avatar column minus the opposite avatar column. The `72ch` cap on message content is removed (consumers relying on it will see wider bubbles).
+- New optional prop `bubbleOppositeGap?: number | string` (default: avatar size + gutter): minimum gap on the side opposite the avatar.
+- Tool steps render as one outlined "Steps" card (header with quiet count) with rows appended in arrival order: status icon on a connector line, family icon, name, one-line args, duration. Nothing auto-expands or auto-folds (no running-to-done collapse, so the screen no longer jumps). Row click opens the detail drawer; the chevron preview is user-initiated only. `ToolStepGroup` stays exported; `showSteps`/`hideSteps` labels may be unused but remain.
+- Jump-to-latest is anchored just above the composer, never over message text.
+- Same horizontal inset for toolbar and message avatars. Nothing breaking.
+
 ## 0.2.2 (2026-11-21)
 - Fix: history/paged-in `role: "user"` messages now carry author id `user` (agent: `hermes`), so they use the same viewer style (right-aligned, accent bubble, avatar right) as live messages. No prop changes.
 - Send button is a circle (`border-radius: 50%`), accent filled whenever there is text; grey only when truly disabled.

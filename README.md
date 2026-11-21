@@ -49,6 +49,7 @@ import { HermesChat } from "mui-hermes-chat";
 | `onTurnEnd?` | `() => void` | after each finished turn and after New chat |
 | `mode?` | `inline \| sheet \| auto` | `auto` = sheet on phones |
 | `fit?` | `{ minHeight?, bottomGap? }` | fit the card to the viewport (theme spacing units) |
+| `bubbleOppositeGap?` | `number \| string` | min gap on the side opposite the avatar; default avatar size + gutter |
 | `toolbarActions?` | `ReactNode` | extra toolbar content |
 
 ## Labels

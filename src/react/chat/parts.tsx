@@ -8,6 +8,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import type { ApprovalEvent } from "../../core/events";
 import type { HermesToolCall } from "../../core/types";
 import { ToolStepGroup } from "../tools/ToolStepGroup";
+import { ThinkingPart } from "./ThinkingPart";
 import { Approval } from "./Approval";
 import { defaultChatLabels, type ChatLabels } from "./labels";
 
@@ -118,6 +119,7 @@ export function hermesPartRenderers({ decide, renderHtml, onOpenTool, labels }: 
   return {
     text: ({ part, message }) =>
       message.parts.some((p) => p.type === "data-reply") ? null : <StreamedText text={part.text} />,
+    reasoning: ({ part }) => <ThinkingPart text={part.text} state={part.state} labels={labels} />,
     "data-reply": ({ part }) => <ReplyHtml html={(part.data as { html?: string }).html ?? ""} renderHtml={renderHtml} labels={labels} />,
     "data-commentary": ({ part }) => (
       <Typography variant="caption" color="text.secondary" component="p" sx={{ ...wrap, fontStyle: "italic", m: 0 }}>
