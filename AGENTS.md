@@ -7,3 +7,9 @@
 - Theme tokens only: no hex colours, px radii or font sizes outside the theme (the Hermes design-system rule).
 - `npm run typecheck && npm test` must pass; `npm run build` regenerates `dist/`, which is committed on release.
 - Releases: bump package.json version + MUI_HERMES_CHAT_VERSION + CHANGELOG.md, rebuild dist, tag `v<x.y.z>`.
+
+# Secrets guard
+- Run `npm run hooks` once per clone (sets `core.hooksPath=.githooks`).
+- The hooks (`pre-commit`, `pre-push`) need `gitleaks` (`brew install gitleaks`) and fail closed without it.
+- Never commit real names, emails, host names, IPs or home paths: use synthetic values (`Ada Lovelace`, `ada@example.com`, `/Users/alice/`).
+- CI job `secrets` scans the full history and is the backstop; `--no-verify` is the explicit local bypass.
