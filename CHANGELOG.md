@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.1 (2026-11-21)
+- Fix: bubbles use theme.shape.borderRadius (same corner as the Steps card) instead of shape² — 0.3.0 rendered pill-shaped bubbles. Visual only.
+
 ## 0.3.0 (2026-11-21)
 - iMessage-style bubbles: both sides size to their content and grow up to thread width minus own avatar column minus the opposite avatar column. The `72ch` cap on message content is removed (consumers relying on it will see wider bubbles).
 - New optional prop `bubbleOppositeGap?: number | string` (default: avatar size + gutter): minimum gap on the side opposite the avatar.
