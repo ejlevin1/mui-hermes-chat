@@ -29,6 +29,9 @@ function toolOutput(e: ToolEvent): Record<string, unknown> {
   return out;
 }
 
+export const USER_AUTHOR_ID = "user";
+export const AGENT_AUTHOR_ID = "hermes";
+
 /**
  * History rows → x-chat messages. User: one text part. Assistant: a `data-tools` part (`HermesToolCall[]`)
  * when it carries tools, then a `data-reply` part (`{text, html}`) when it has html, else a text part.
@@ -43,7 +46,9 @@ export function toChatMessages(messages: HermesMessage[]): ChatMessage[] {
     } else {
       parts.push({ type: "text", text: m.text });
     }
-    const msg: ChatMessage = { id: m.id, role: m.role, parts, status: "sent" };
+    // Author ids match `currentUser`/`members` in HermesChat: x-chat decides viewer ownership by author id.
+    const author = { id: m.role === "user" ? USER_AUTHOR_ID : AGENT_AUTHOR_ID };
+    const msg: ChatMessage = { id: m.id, role: m.role, author, parts, status: "sent" };
     if (typeof m.created === "number") msg.createdAt = new Date(m.created * 1000).toISOString();
     return msg;
   });

@@ -26,6 +26,7 @@ export function SendOrStopButton({ streaming, canSend, onSend, onStop, sendLabel
           onClick={streaming ? onStop : onSend}
           sx={(t) => ({
             flexShrink: 0,
+            borderRadius: "50%",
             backgroundColor: "primary.main",
             color: "primary.contrastText",
             "&:hover": { backgroundColor: "primary.dark" },

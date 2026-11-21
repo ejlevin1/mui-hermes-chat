@@ -22,7 +22,7 @@ import { visuallyHidden } from "@mui/utils";
 import { ChatBox } from "@mui/x-chat";
 import { useChat, useMessageContext } from "@mui/x-chat/headless";
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { hermesChatAdapter, toChatMessages } from "../../adapter/adapter";
+import { AGENT_AUTHOR_ID, USER_AUTHOR_ID, hermesChatAdapter, toChatMessages } from "../../adapter/adapter";
 import { sendApproval, startOver } from "../../core/transport";
 import type { ChatUrls, CsrfSource, HermesMessage, HermesToolCall, Participant, SessionInfo, Target } from "../../core/types";
 import { ParticipantAvatar } from "../avatar/ParticipantAvatar";
@@ -199,11 +199,12 @@ function Panel(props: PanelProps) {
         adapter={adapter}
         initialMessages={initialMessages}
         initialActiveConversationId={CONVERSATION}
-        currentUser={{ id: "user", displayName: participants.user.name, role: "user" }}
+        currentUser={{ id: USER_AUTHOR_ID, displayName: participants.user.name, role: "user" }}
         members={[
-          { id: "user", displayName: participants.user.name, role: "user" },
-          { id: "hermes", displayName: participants.agent.name, role: "assistant" },
+          { id: USER_AUTHOR_ID, displayName: participants.user.name, role: "user" },
+          { id: AGENT_AUTHOR_ID, displayName: participants.agent.name, role: "assistant" },
         ]}
+        getMessageAuthorId={(m) => m.author?.id ?? (m.role === "user" ? USER_AUTHOR_ID : AGENT_AUTHOR_ID)}
         partRenderers={partRenderers}
         features={{ attachments: false }}
         onFinish={() => { setSaid((s) => (s.endsWith("​") ? labels.replied : labels.replied + "​")); onTurnEnd?.(); }}
