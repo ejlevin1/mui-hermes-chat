@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.2 (2026-11-21)
+- A dropped turn stream (network, or the server's `detached` idle cap) shows 'still working' instead of 'send it again'; `onStreamLost` and `resetKey` props.
+
 ## 0.3.1 (2026-11-21)
 - Fix: bubbles use theme.shape.borderRadius (same corner as the Steps card) instead of shape² — 0.3.0 rendered pill-shaped bubbles. Visual only.
 
