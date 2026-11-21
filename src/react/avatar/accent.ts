@@ -2,7 +2,7 @@
 import type { Theme } from "@mui/material/styles";
 import { blue, green, grey, indigo, orange, pink, purple, red, teal } from "@mui/material/colors";
 
-const SHADES: Record<string, typeof blue> = { indigo, blue, teal, green, orange, red, purple, pink, gray: grey, grey };
+const SHADES: Record<string, { 300: string; 600: string }> = { indigo, blue, teal, green, orange, red, purple, pink, gray: grey, grey };
 
 export function accentToPalette(theme: Theme, name: string): string {
   const role = (theme.palette as unknown as Record<string, { main?: unknown } | undefined>)[name];
