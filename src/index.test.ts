@@ -1,5 +1,5 @@
 import * as api from "./index";
-test("exports the release version", () => { expect(api.MUI_HERMES_CHAT_VERSION).toBe("0.2.2"); });
+test("exports the release version", () => { expect(api.MUI_HERMES_CHAT_VERSION).toBe("0.3.0"); });
 test("exports the contract section 5 runtime names", () => {
   for (const n of ["parseChatEvents", "CHAT_EVENTS_CONTRACT", "runTurn", "sendApproval", "startOver", "fetchHistoryPage",
     "ChatHttpError", "initials", "avatarColor", "ToolFamily", "hermesChatAdapter", "HermesChat", "ParticipantAvatar",

@@ -1,5 +1,5 @@
 /** mui-hermes-chat: embeddable Hermes chat for React + MUI. Public API only; see README. */
-export const MUI_HERMES_CHAT_VERSION = "0.2.2";
+export const MUI_HERMES_CHAT_VERSION = "0.3.0";
 
 export * from "./core";
 export * from "./adapter";
