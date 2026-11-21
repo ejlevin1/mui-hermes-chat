@@ -13,7 +13,7 @@ export function JumpToLatest({ labels }: { labels?: Partial<ComposerLabels> }) {
   const fresh = unseenMessageCount > 0;
   return (
     // zero-height sticky row at the bottom of the list area: the button sits in flow above the composer
-    <Box sx={{ position: "sticky", bottom: 0, height: 0, display: "flex", justifyContent: "center", overflow: "visible", pointerEvents: "none" }}>
+    <Box data-testid="jump-to-latest" sx={{ position: "sticky", bottom: 0, height: 0, display: "flex", justifyContent: "center", overflow: "visible", pointerEvents: "none" }}>
       <Tooltip title={l.jumpToLatest}>
         <Button
           variant="contained"

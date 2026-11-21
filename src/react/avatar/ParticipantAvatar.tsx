@@ -20,7 +20,7 @@ export function ParticipantAvatar({ participant, size = "md" }: ParticipantAvata
   const bg = accentToPalette(theme, participant.color || avatarColor(participant.name));
   const text = participant.initials ?? initials(participant.name);
   const showImage = !!participant.avatarUrl && !failed;
-  const dim = size === "sm" ? 3 : 4;
+  const dim = size === "sm" ? 2 : 4;
   return (
     <Tooltip title={participant.name}>
       <Avatar
