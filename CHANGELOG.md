@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0 (2026-11-21)
+- Published to npm (`mui-hermes-chat`) from CI with provenance (trusted publishing, no tokens): install from npm.
+- `dist/` is no longer committed; it is built in CI and shipped in the npm package. Git tags `v0.1.x` keep their `dist/`.
+- CI hardening: actions pinned to commit SHAs, read-only `GITHUB_TOKEN`, checksum-verified gitleaks download, package
+  contents checked with `npm pack --dry-run`.
+- Dependabot for npm and GitHub Actions (weekly, minor + patch grouped).
+- `SECURITY.md`: report vulnerabilities privately via GitHub.
+
 ## 0.1.1 (2026-11-21)
 - MIT license.
 - gitleaks git hooks (pre-commit, pre-push) and a CI `secrets` job; `npm run hooks` enables them.
