@@ -131,6 +131,7 @@ export function hermesPartRenderers({ decide, renderHtml, onOpenTool, labels }: 
       return <Approval event={ev} onDecide={(choice) => decide(ev, choice)} labels={labels} />;
     },
     "data-error": ({ part }) => <Alert severity="error">{(part.data as { text?: string }).text || l.errorDefault}</Alert>,
+    "data-stream-lost": () => <Alert severity="info" role="status">{l.stillWorking}</Alert>,
     "data-tools": group as never,
     "dynamic-tool": group as never,
     tool: group as never,
