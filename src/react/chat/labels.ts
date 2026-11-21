@@ -37,6 +37,11 @@ export interface ChatOwnLabels {
   expired: string;
   expiresIn: (clock: string) => string;
   messageList: string;
+  thinking: string;
+  thoughtFor: (seconds: number) => string;
+  thoughts: string;
+  showAll: string;
+  showLess: string;
 }
 
 export type ChatLabels = ComposerLabels & ToolLabels & SessionInfoLabels & ChatOwnLabels;
@@ -78,4 +83,9 @@ export const defaultChatLabels: ChatLabels = {
   expired: "Expired",
   expiresIn: (c) => `Expires in ${c}`,
   messageList: "Conversation",
+  thinking: "Thinking…",
+  thoughtFor: (s) => `Thought for ${s} s`,
+  thoughts: "Thoughts",
+  showAll: "Show all",
+  showLess: "Show less",
 };
