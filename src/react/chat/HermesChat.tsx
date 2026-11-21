@@ -17,7 +17,7 @@ import Paper from "@mui/material/Paper";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { useTheme } from "@mui/material/styles";
+import { useTheme, type Theme } from "@mui/material/styles";
 import { visuallyHidden } from "@mui/utils";
 import { ChatBox } from "@mui/x-chat";
 import { useChat, useMessageContext } from "@mui/x-chat/headless";
@@ -60,11 +60,46 @@ export interface HermesChatProps {
   mode?: "inline" | "sheet" | "auto";
   fit?: { minHeight?: number; bottomGap?: number };
   toolbarActions?: ReactNode;
+  /** Minimum gap on the side opposite a bubble's avatar (CSS length or px). Default: the avatar column (avatar + gutter). */
+  bubbleOppositeGap?: number | string;
 }
 
 type PanelProps = HermesChatProps & { fitHeight: boolean };
 
 const CONVERSATION = "hermes";
+
+/** Small avatar column (= ParticipantAvatar sm: `spacing(dim * 2)`, dim 2) and the gutter between avatar and bubble. */
+const AVATAR_SPACING = 4;
+const GUTTER_SPACING = 1;
+/** Default `bubbleOppositeGap`: avatar + gutter. */
+export const AVATAR_COLUMN = (theme: Theme) => theme.spacing(AVATAR_SPACING + GUTTER_SPACING);
+
+/** x-chat message slot styling: content-sized bubbles, capped at thread − own column − opposite column. */
+export function bubbleSlotProps(theme: Theme, oppositeGap?: number | string) {
+  const gap = oppositeGap === undefined ? AVATAR_COLUMN(theme) : typeof oppositeGap === "number" ? `${oppositeGap}px` : oppositeGap;
+  return {
+    messageRoot: {
+      sx: {
+        // fixed avatar track: grouped (follow-up) messages keep an empty cell of the same width (x-chat sizes it by this var)
+        "&&": { "--MuiChatMessage-avatarSize": theme.spacing(AVATAR_SPACING), gridTemplateColumns: `${theme.spacing(AVATAR_SPACING)} minmax(0, 1fr)`, columnGap: theme.spacing(GUTTER_SPACING), paddingInline: theme.spacing(1.5), paddingBlock: `0 ${theme.spacing(1.5)}`, alignItems: "start" },
+        "&&.MuiChatMessage-roleUser": { gridTemplateColumns: `minmax(0, 1fr) ${theme.spacing(AVATAR_SPACING)}` },
+        "&.MuiChatMessage-roleUser .MuiChatMessage-content": { justifySelf: "end" },
+        "&.MuiChatMessage-roleUser .MuiChatMessage-bubble": { bgcolor: "primary.main", color: "primary.contrastText" },
+      },
+    },
+    messageContent: {
+      sx: {
+        // the grid cell already excludes the own avatar column; subtract the opposite column
+        maxWidth: `calc(100% - ${gap})`,
+        width: "fit-content",
+        minWidth: 0,
+        overflowWrap: "anywhere",
+        justifySelf: "start",
+        "& .MuiChatMessage-bubble": { borderRadius: theme.shape.borderRadius, padding: theme.spacing(1, 1.5), bgcolor: "action.hover", color: "text.primary" },
+      },
+    },
+  };
+}
 
 /** Per-message avatar from the participants (the message role picks which). */
 function avatarSlot(participants: HermesChatProps["participants"]) {
@@ -107,7 +142,9 @@ function HistoryBar({ labels }: { labels: ChatLabels }) {
 }
 
 function Panel(props: PanelProps) {
-  const { urls, target, csrf, history, renderHtml, participants, session, maxMessage, notice, linkedNote, changed, hasEarlier, earlierHref, onTurnEnd, toolbarActions, fit, fitHeight } = props;
+  const { urls, target, csrf, history, renderHtml, participants, session, maxMessage, notice, linkedNote, changed, hasEarlier, earlierHref, onTurnEnd, toolbarActions, fit, fitHeight, bubbleOppositeGap } = props;
+  const theme = useTheme();
+  const bubbles = useMemo(() => bubbleSlotProps(theme, bubbleOppositeGap), [theme, bubbleOppositeGap]);
   const labels = useMemo<ChatLabels>(() => ({ ...defaultChatLabels, ...props.labels }), [props.labels]);
   const [epoch, setEpoch] = useState(0);
   const [error, setError] = useState("");
@@ -211,7 +248,7 @@ function Panel(props: PanelProps) {
         slots={slots}
         slotProps={{
           messageList: { autoScroll: true, slotProps: { messageListScroller: { ref: scroller, "aria-live": "off", "aria-label": labels.messageList } } },
-          messageContent: { sx: { maxWidth: "72ch", overflowWrap: "anywhere" } },
+          ...bubbles,
         } as never}
         sx={{ flex: "0 1 auto", minHeight: 0, height: "auto", border: 0, bgcolor: "transparent" }}
       />
