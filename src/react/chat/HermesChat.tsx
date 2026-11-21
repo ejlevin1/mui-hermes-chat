@@ -95,7 +95,7 @@ export function bubbleSlotProps(theme: Theme, oppositeGap?: number | string) {
         minWidth: 0,
         overflowWrap: "anywhere",
         justifySelf: "start",
-        "& .MuiChatMessage-bubble": { borderRadius: theme.shape.borderRadius, padding: theme.spacing(1, 1.5), bgcolor: "action.hover", color: "text.primary" },
+        "& .MuiChatMessage-bubble": { borderRadius: 1, padding: theme.spacing(1, 1.5), bgcolor: "action.hover", color: "text.primary" },
       },
     },
   };
