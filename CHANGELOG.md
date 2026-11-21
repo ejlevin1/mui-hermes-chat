@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.1 (2026-11-21)
+- Fix CI: regenerate `package-lock.json` with npm 10 so `npm ci` passes on Node 22 (missing optional `yaml@2.9.1` entry).
+
 ## 0.2.0 (2026-11-21)
 - Published to npm (`mui-hermes-chat`) from CI with provenance (trusted publishing, no tokens): install from npm.
 - `dist/` is no longer committed; it is built in CI and shipped in the npm package. Git tags `v0.1.x` keep their `dist/`.
