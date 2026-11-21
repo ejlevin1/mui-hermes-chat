@@ -1,6 +1,6 @@
 {
   "name": "mui-hermes-chat",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Embeddable Hermes chat for React + MUI (on @mui/x-chat)",
   "type": "module",
   "license": "MIT",

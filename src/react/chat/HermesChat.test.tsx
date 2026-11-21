@@ -131,6 +131,27 @@ describe("HermesChat history", () => {
     expect(order).toEqual(["older", "hi"]);
   });
 
+  test("every user message (history, paged-in, live) gets the viewer layout; assistant does not", async () => {
+    handler = (url) => url === "/t"
+      ? sse([frame({ t: "reply", text: "ok", html: "<p>ok</p>" }), frame({ t: "end" })])
+      : new Response(JSON.stringify({ messages: [msg("m0", "user", "older")], cursor: null, has_more: false }));
+    ui({ history: { messages: [msg("h1", "user", "histuser"), msg("h2", "assistant", "histbot")], cursor: "c1", hasMore: true } });
+    fireEvent.click(await screen.findByRole("button", { name: "Load earlier messages" }));
+    await screen.findByText("older");
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "liveuser" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+    await screen.findByText("liveuser");
+    const areas = (text: string) => {
+      const el = text === "histbot" ? screen.getAllByTestId("rendered")[0]! : screen.getByText(text);
+      const root = el.closest(".MuiChatMessage-root") as HTMLElement;
+      return getComputedStyle(root).gridTemplateAreas;
+    };
+    const user = ["older", "histuser", "liveuser"].map(areas);
+    // viewer layout puts content first (own messages right-aligned); consecutive user messages only differ by grouping (no avatar row)
+    user.forEach((a) => expect(a.startsWith('"content ')).toBe(true));
+    expect(areas("histbot").startsWith('"content ')).toBe(false);
+  });
+
   test("paging failure shows an error row with Retry that recovers", async () => {
     let n = 0;
     handler = () => (n++ === 0

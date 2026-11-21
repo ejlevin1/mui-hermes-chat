@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2 (2026-11-21)
+- Fix: history/paged-in `role: "user"` messages now carry author id `user` (agent: `hermes`), so they use the same viewer style (right-aligned, accent bubble, avatar right) as live messages. No prop changes.
+- Send button is a circle (`border-radius: 50%`), accent filled whenever there is text; grey only when truly disabled.
+- Composer insets: field and Send keep >= 8px (`theme.spacing(1)`) from the surface edges at every density.
+- New exports `USER_AUTHOR_ID`, `AGENT_AUTHOR_ID` (adapter). Nothing breaking.
+
 ## 0.2.1 (2026-11-21)
 - Fix CI: regenerate `package-lock.json` with npm 10 so `npm ci` passes on Node 22 (missing optional `yaml@2.9.1` entry).
 
