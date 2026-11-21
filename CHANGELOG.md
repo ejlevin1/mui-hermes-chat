@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 (2026-11-21)
+- MIT license.
+- gitleaks git hooks (pre-commit, pre-push) and a CI `secrets` job; `npm run hooks` enables them.
+- Synthetic names in test fixtures.
+
 ## 0.1.0 (2026-11-21)
 First release. Contract: `hermes-chat-events/2`, paged history, session info.
 - Core (pure TS): `parseChatEvents` (v2 frames: tool id/preview/args/duration/result, `commentary`), `runTurn`,
