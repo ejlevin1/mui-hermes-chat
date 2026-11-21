@@ -5,10 +5,10 @@ a full chat screen (avatars, composer, streamed replies, Jarvis-style tool rows,
 session info), plus the lower layers on their own (event parser, transport, x-chat adapter).
 
 ## Install
-Private, by git tag (`dist/` is committed, no build step):
+By git tag (`dist/` is committed, no build step):
 
 ```json
-"mui-hermes-chat": "github:ejlevin1/mui-hermes-chat#v0.1.0"
+"mui-hermes-chat": "github:ejlevin1/mui-hermes-chat#v0.1.1"
 ```
 
 Peer deps: `react` 19, `react-dom`, `@mui/material` 9, `@mui/icons-material` 9, `@emotion/react`, `@emotion/styled`,
@@ -94,3 +94,10 @@ const adapter = hermesChatAdapter({ urls, target, csrf, initialPage: { messages,
 ```
 
 Layers: `src/core` (pure TS) · `src/adapter` (x-chat `ChatAdapter`) · `src/react/<area>`.
+
+## Contributing
+Run `npm run hooks` once per clone: it enables the gitleaks pre-commit and pre-push hooks (`brew install gitleaks`).
+Use synthetic names, emails and paths in code and fixtures.
+
+## License
+MIT, see [LICENSE](LICENSE).
