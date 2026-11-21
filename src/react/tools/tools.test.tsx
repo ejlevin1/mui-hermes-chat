@@ -54,28 +54,49 @@ test("diff preview shows gutter symbols as text", () => {
   expect(d).toContain("+ b");
 });
 
-test("single call renders a ToolRow, no group", () => {
+test("single call renders the Steps card with one row", () => {
   render(<ToolStepGroup calls={[c()]} />);
-  expect(screen.getByTestId("tool-row")).toBeTruthy();
-  expect(screen.queryByTestId("tool-step-group")).toBeNull();
+  expect(screen.getByTestId("tool-step-group")).toBeTruthy();
+  expect(screen.getByText("Steps")).toBeTruthy();
+  expect(screen.getAllByTestId("tool-row")).toHaveLength(1);
 });
 
 const many = [c({ id: "1", duration_s: 5 }), c({ id: "2", state: "failed", duration_s: 7 }), c({ id: "3", duration_s: 0 })];
 
-test("group collapsed when turn done; summary with failed count; expands", () => {
+test("finished card: summary with failed count, all rows shown, no group toggle", () => {
   render(<ToolStepGroup calls={many} />);
   expect(screen.getByText("3 steps · 12 s")).toBeTruthy();
   expect(screen.getByText("1 failed")).toBeTruthy();
-  expect(screen.queryAllByTestId("tool-row")).toHaveLength(0);
-  fireEvent.click(screen.getByRole("button", { name: /3 steps/ }));
   expect(screen.getAllByTestId("tool-row")).toHaveLength(3);
+  expect(screen.getByTestId("tool-step-group").querySelector("[aria-expanded]")).toBeNull();
 });
 
-test("group expanded while running, collapsible; collapses after reply", () => {
-  const { rerender } = render(<ToolStepGroup calls={many} running />);
-  expect(screen.getAllByTestId("tool-row")).toHaveLength(3);
-  rerender(<ToolStepGroup calls={many} running={false} />);
-  expect(screen.queryAllByTestId("tool-row")).toHaveLength(0);
+test("running -> done keeps every row mounted (same nodes); new call appends", () => {
+  const live = [c({ id: "1", duration_s: 1 }), c({ id: "2", state: "start" })];
+  const { rerender } = render(<ToolStepGroup calls={live} running />);
+  expect(screen.getByText("1 done · 1 running")).toBeTruthy();
+  const before = screen.getAllByTestId("tool-row");
+  expect(before).toHaveLength(2);
+  rerender(<ToolStepGroup calls={[...live, c({ id: "3", state: "start" })]} running />);
+  const grown = screen.getAllByTestId("tool-row");
+  expect(grown).toHaveLength(3);
+  expect(grown[0]).toBe(before[0]);
+  expect(grown[1]).toBe(before[1]);
+  const finished = [c({ id: "1", duration_s: 1 }), c({ id: "2", duration_s: 2 }), c({ id: "3", duration_s: 3 })];
+  rerender(<ToolStepGroup calls={finished} running={false} />);
+  const after = screen.getAllByTestId("tool-row");
+  expect(after).toHaveLength(3);
+  after.forEach((n, i) => expect(n).toBe(grown[i]));
+  expect(screen.getByText("3 steps · 6.0 s")).toBeTruthy();
+});
+
+test("row click opens detail; chevron preview is per row", () => {
+  const onOpen = vi.fn();
+  const calls = [c({ id: "1", args: { command: "ls" }, result_preview: "out" }), c({ id: "2", name: "x" })];
+  render(<ToolStepGroup calls={calls} onOpen={onOpen} />);
+  fireEvent.click(screen.getAllByRole("button", { name: /Tool terminal/ })[0]!);
+  expect(onOpen).toHaveBeenCalledWith(calls[0]);
+  expect(screen.getAllByRole("button", { name: "Show preview" })).toHaveLength(1);
 });
 
 test("drawer: tabs request/response, args tree, clipped note, copy", () => {
