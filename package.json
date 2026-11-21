@@ -1,11 +1,14 @@
 {
   "name": "mui-hermes-chat",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Embeddable Hermes chat for React + MUI (on @mui/x-chat)",
-  "private": true,
   "type": "module",
   "license": "MIT",
-  "repository": { "type": "git", "url": "github:ejlevin1/mui-hermes-chat" },
+  "repository": { "type": "git", "url": "git+https://github.com/ejlevin1/mui-hermes-chat.git" },
+  "homepage": "https://github.com/ejlevin1/mui-hermes-chat#readme",
+  "bugs": { "url": "https://github.com/ejlevin1/mui-hermes-chat/issues" },
+  "keywords": ["react", "mui", "chat", "hermes", "x-chat", "sse"],
+  "publishConfig": { "access": "public", "provenance": true },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
@@ -16,6 +19,7 @@
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build",
     "hooks": "git config core.hooksPath .githooks"
   },
   "peerDependencies": {
