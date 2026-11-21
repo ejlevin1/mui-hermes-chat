@@ -1,0 +1,70 @@
+# Publishes mui-hermes-chat to npm on each v* tag via npm trusted publishing (OIDC, provenance).
+# This filename is registered with npm as the trusted publisher: do not rename it. No tokens or secrets.
+name: publish
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions: {}
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    concurrency: publish
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: Ensure npm >= 11.5.1 (trusted publishing)
+        run: |
+          set -euo pipefail
+          if ! node -e '
+            const [a, b, c] = process.argv[1].split(".").map(Number);
+            process.exit(a > 11 || (a === 11 && (b > 5 || (b === 5 && c >= 1))) ? 0 : 1);
+          ' "$(npm --version)"; then
+            npm install -g npm@^11.5.1
+          fi
+          npm --version
+      - name: Check the tag matches package.json
+        run: |
+          set -euo pipefail
+          version="$(node -p 'require("./package.json").version')"
+          want="v$version"
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            if [ "$GITHUB_REF_NAME" != "$want" ]; then
+              echo "::error::tag $GITHUB_REF_NAME does not match package.json version ($want)"
+              exit 1
+            fi
+          else
+            # Dispatch: the tag v<version> must exist and point at the checked-out commit.
+            tagged="$(git ls-remote --tags origin "refs/tags/$want^{}" "refs/tags/$want" | sort -k2 -r | head -n1 | cut -f1)"
+            head="$(git rev-parse HEAD)"
+            if [ -z "$tagged" ]; then
+              echo "::error::tag $want does not exist"
+              exit 1
+            fi
+            if [ "$tagged" != "$head" ]; then
+              echo "::error::tag $want points at $tagged, not HEAD ($head)"
+              exit 1
+            fi
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Publish (skipped when this version is already on npm)
+        run: |
+          set -euo pipefail
+          published="$(npm view "mui-hermes-chat@$VERSION" version 2>/dev/null || true)"
+          if [ "$published" = "$VERSION" ]; then
+            echo "mui-hermes-chat@$VERSION already published; nothing to do."
+            exit 0
+          fi
+          npm publish --provenance --access public
