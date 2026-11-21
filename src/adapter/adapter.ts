@@ -2,7 +2,7 @@
 import type { ChatAdapter } from "@mui/x-chat/headless";
 import type { ChatMessage, ChatMessageChunk, ChatMessagePart } from "@mui/x-chat/types";
 import type { ChatEvent, ToolEvent } from "../core/events";
-import { ChatHttpError, fetchHistoryPage, runTurn } from "../core/transport";
+import { ChatHttpError, StreamLostError, fetchHistoryPage, runTurn } from "../core/transport";
 import type { ChatUrls, CsrfSource, HermesMessage, HistoryPage, Target } from "../core/types";
 
 export interface HermesAdapterOptions {
@@ -13,7 +13,11 @@ export interface HermesAdapterOptions {
   initialPage?: HistoryPage;
   /** Shown as the error part when the connection drops with no server text. */
   networkErrorText?: string;
+  /** Called once when the turn stream is lost (`network`: it ended without a final frame; `detached`: the relay's idle cap). The run may continue server-side. */
+  onStreamLost?: (info: { code: StreamLostCode }) => void;
 }
+
+export type StreamLostCode = "network" | "detached";
 
 let seq = 0;
 const nextId = (p: string) => `${p}-${Date.now().toString(36)}-${(seq++).toString(36)}`;
@@ -112,6 +116,16 @@ export function hermesChatAdapter(opts: HermesAdapterOptions): ChatAdapter {
             c.close();
           };
           c.enqueue({ type: "start", messageId });
+          let lost = false;
+          /** Lost stream ≠ failed turn: an info note part, the user's message stays, nothing to resend. */
+          const streamLost = (code: StreamLostCode) => {
+            if (lost || closed) return;
+            lost = true;
+            closeReason();
+            closeText();
+            c.enqueue({ type: "data-stream-lost", id: "stream-lost", data: { code } });
+            opts.onStreamLost?.({ code });
+          };
           const onTool = (e: ToolEvent) => {
             const st = e.state || "start";
             const key = e.id ?? e.name;
@@ -164,6 +178,11 @@ export function hermesChatAdapter(opts: HermesAdapterOptions): ChatAdapter {
                 c.enqueue({ type: "data-reply", id: "reply", data: { text: e.text, html: e.html } });
                 break;
               case "error":
+                if (e.code === "detached") {
+                  streamLost("detached");
+                  finish("stop");
+                  break;
+                }
                 c.enqueue({ type: "data-error", id: "error", data: { text: e.text || "Something went wrong.", code: e.code } });
                 break;
               case "end":
@@ -183,8 +202,12 @@ export function hermesChatAdapter(opts: HermesAdapterOptions): ChatAdapter {
                 c.close();
                 return;
               }
-              const msg = err instanceof ChatHttpError ? err.message : "";
-              on({ t: "error", text: msg || opts.networkErrorText || NOTE_NETWORK });
+              if (err instanceof StreamLostError) {
+                streamLost("network");
+                finish("stop");
+                return;
+              }
+              on({ t: "error", text: (err instanceof ChatHttpError && err.message) || opts.networkErrorText || NOTE_NETWORK });
               finish("error");
             },
           );

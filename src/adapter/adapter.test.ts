@@ -1,5 +1,5 @@
 import type { ChatMessage } from "@mui/x-chat/types";
-import { hermesChatAdapter, NOTE_NETWORK, toChatMessages } from "./adapter";
+import { NOTE_NETWORK, hermesChatAdapter, toChatMessages } from "./adapter";
 import type { HermesMessage, HistoryPage } from "../core/types";
 
 const enc = new TextEncoder();
@@ -169,18 +169,65 @@ describe("sendMessage", () => {
     expect(c[1].data).toEqual({ text: "restarted", code: "hermes_restarted" });
   });
 
-  test("a stream that dies with no reply is an error (custom network text)", async () => {
+  test("a stream that dies with no reply is a lost stream, not an error", async () => {
     handler = () => sse([frame({ t: "delta", text: "x" })]);
-    const c = await chunks(undefined, { networkErrorText: "Lost." });
-    expect(types(c)).toEqual(["start", "text-start", "text-delta", "data-error", "text-end", "finish"]);
-    expect(c[3].data).toMatchObject({ text: "Lost." });
-    expect(c.at(-1)).toMatchObject({ finishReason: "error" });
+    const onStreamLost = vi.fn();
+    const c = await chunks(undefined, { networkErrorText: "Lost.", onStreamLost });
+    expect(types(c)).toEqual(["start", "text-start", "text-delta", "text-end", "data-stream-lost", "finish"]);
+    expect(c.find((x) => x.type === "data-stream-lost")!.data).toEqual({ code: "network" });
+    expect(onStreamLost).toHaveBeenCalledTimes(1);
+    expect(onStreamLost).toHaveBeenCalledWith({ code: "network" });
   });
 
-  test("a network failure uses the default note", async () => {
+  test("a fetch that rejects before any response is a failed turn (NOTE_NETWORK), not a lost stream", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => Promise.reject(new TypeError("fetch failed"))));
-    const c = await chunks();
+    const onStreamLost = vi.fn();
+    const c = await chunks(undefined, { onStreamLost });
+    expect(types(c)).not.toContain("data-stream-lost");
     expect(c.find((x) => x.type === "data-error")!.data).toMatchObject({ text: NOTE_NETWORK });
+    expect(onStreamLost).not.toHaveBeenCalled();
+  });
+
+  test("a pre-response failure uses networkErrorText when given", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Promise.reject(new TypeError("fetch failed"))));
+    const c = await chunks(undefined, { networkErrorText: "Offline." });
+    expect(c.find((x) => x.type === "data-error")!.data).toMatchObject({ text: "Offline." });
+  });
+
+  test("a read error after an OK response is a lost stream", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      const body = new ReadableStream({ pull(ctl) { ctl.error(new TypeError("network error")); } });
+      return new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+    }));
+    const onStreamLost = vi.fn();
+    const c = await chunks(undefined, { onStreamLost });
+    expect(c.find((x) => x.type === "data-stream-lost")!.data).toEqual({ code: "network" });
+    expect(onStreamLost).toHaveBeenCalledTimes(1);
+  });
+
+  test("an error frame with code detached is a lost stream (code detached), once", async () => {
+    handler = () => sse([frame({ t: "delta", text: "x" }), frame({ t: "error", code: "detached", text: "idle" })]);
+    const onStreamLost = vi.fn();
+    const c = await chunks(undefined, { onStreamLost });
+    expect(types(c)).not.toContain("data-error");
+    expect(c.find((x) => x.type === "data-stream-lost")!.data).toEqual({ code: "detached" });
+    expect(onStreamLost).toHaveBeenCalledTimes(1);
+    expect(onStreamLost).toHaveBeenCalledWith({ code: "detached" });
+  });
+
+  test("other error codes and an HTTP error keep the error part and never call onStreamLost", async () => {
+    const onStreamLost = vi.fn();
+    handler = () => sse([frame({ t: "error", code: "boom", text: "bad" })]);
+    expect(types(await chunks(undefined, { onStreamLost }))).toEqual(["start", "data-error", "finish"]);
+    handler = () => new Response(JSON.stringify({ text: "busy" }), { status: 409 });
+    const c = await chunks(undefined, { onStreamLost });
+    expect(c.find((x) => x.type === "data-error")!.data).toMatchObject({ text: "busy" });
+    expect(onStreamLost).not.toHaveBeenCalled();
+  });
+
+  test("keepalive comments between frames are skipped", async () => {
+    handler = () => sse([": keepalive\n\n", frame({ t: "delta", text: "a" }), ": keepalive\n\n: keepalive\n\n", frame({ t: "reply", text: "a", html: "<p>a</p>" })], { split: 3 });
+    expect(types(await chunks())).toEqual(["start", "text-start", "text-delta", "text-end", "data-reply", "finish"]);
   });
 
   test("a non-OK reply surfaces the server's text", async () => {

@@ -23,6 +23,7 @@ export interface ChatOwnLabels {
   author: (name: string) => string;
   commentary: string;
   errorDefault: string;
+  stillWorking: string;
   copyCode: string;
   copyCodeShort: string;
   copiedCode: string;
@@ -69,6 +70,7 @@ export const defaultChatLabels: ChatLabels = {
   author: (name) => `${name}:`,
   commentary: "Note",
   errorDefault: "Something went wrong.",
+  stillWorking: "Hermes is still working on this. The answer will appear here when it's done.",
   copyCode: "Copy code",
   copyCodeShort: "Copy",
   copiedCode: "Copied",
