@@ -218,7 +218,8 @@ describe("toChatMessages", () => {
   test("user text, assistant data-tools before data-reply, created → ISO", () => {
     const tools = [{ id: "c1", name: "terminal", state: "done" as const, preview: "ls", duration_s: 1 }];
     const out = toChatMessages([um("u1", "hi"), am("a1", { tools, created: 1700000000 }), { id: "a2", role: "assistant", text: "plain", html: "" }, { id: "a3", role: "assistant", text: "", html: "", tools }]);
-    expect(out[0]).toEqual({ id: "u1", role: "user", parts: [{ type: "text", text: "hi" }], status: "sent" });
+    expect(out[0]).toEqual({ id: "u1", role: "user", author: { id: "user" }, parts: [{ type: "text", text: "hi" }], status: "sent" });
+    expect(out[1].author).toEqual({ id: "hermes" });
     expect(out[1].parts).toEqual([
       { type: "data-tools", id: "a1-tools", data: tools },
       { type: "data-reply", id: "reply", data: { text: "a1", html: "<p>a1</p>" } },

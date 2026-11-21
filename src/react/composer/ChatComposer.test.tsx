@@ -16,6 +16,14 @@ test("send is disabled when empty and enabled with text", () => {
   expect(send.disabled).toBe(false);
 });
 
+test("send is a round accent button when enabled", () => {
+  wrap(<ChatComposer />);
+  fireEvent.change(input(), { target: { value: "hi" } });
+  const send = screen.getByRole("button", { name: "Send message" });
+  expect(getComputedStyle(send).borderRadius).toBe("50%");
+  expect(send.className).toContain("colorPrimary");
+});
+
 test("Enter sends, Shift+Enter does not", async () => {
   wrap(<ChatComposer />);
   fireEvent.change(input(), { target: { value: "hello" } });
