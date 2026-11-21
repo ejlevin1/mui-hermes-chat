@@ -5,11 +5,12 @@ a full chat screen (avatars, composer, streamed replies, Jarvis-style tool rows,
 session info), plus the lower layers on their own (event parser, transport, x-chat adapter).
 
 ## Install
-By git tag (`dist/` is committed, no build step):
-
-```json
-"mui-hermes-chat": "github:ejlevin1/mui-hermes-chat#v0.1.1"
+```sh
+npm install mui-hermes-chat
 ```
+
+Installing from a git tag (`github:ejlevin1/mui-hermes-chat#v0.1.x`) is legacy: `dist/` is no longer committed, so
+only the v0.1.x tags carry a built `dist/`. Use the npm package from 0.2.0 on.
 
 Peer deps: `react` 19, `react-dom`, `@mui/material` 9, `@mui/icons-material` 9, `@emotion/react`, `@emotion/styled`,
 `@mui/x-chat` exactly `9.0.0-alpha.22`.

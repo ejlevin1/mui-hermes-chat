@@ -1,24 +1,46 @@
 name: ci
 on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
 jobs:
   test:
     name: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with: { node-version: 22 }
       - run: npm ci && npm run typecheck && npm test && npm run build
+      - name: Check the package contents
+        run: |
+          npm pack --dry-run --json > "$RUNNER_TEMP/pack.json"
+          node -e '
+            const files = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))[0].files.map((f) => f.path);
+            console.log(files.join("\n"));
+            const missing = ["dist/index.js", "dist/index.d.ts"].filter((p) => !files.includes(p));
+            const bad = files.filter((p) => p.startsWith("src/") || /\.test\.|(^|\/)test\//.test(p));
+            if (missing.length) { console.error("missing from package: " + missing.join(", ")); process.exit(1); }
+            if (bad.length) { console.error("must not be packed: " + bad.join(", ")); process.exit(1); }
+          ' "$RUNNER_TEMP/pack.json"
   secrets:
     name: secrets
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - name: Install gitleaks 8.30.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { fetch-depth: 0, persist-credentials: false }
+      - name: Install gitleaks 8.30.1 (checksum verified)
         run: |
+          set -euo pipefail
           d="$(mktemp -d)"
-          curl -sSfL -o "$d/gitleaks.tgz" https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz
-          tar -xzf "$d/gitleaks.tgz" -C "$d" gitleaks
+          base=https://github.com/gitleaks/gitleaks/releases/download/v8.30.1
+          tgz=gitleaks_8.30.1_linux_x64.tar.gz
+          sums=gitleaks_8.30.1_checksums.txt
+          curl -sSfL -o "$d/$tgz" "$base/$tgz"
+          curl -sSfL -o "$d/$sums" "$base/$sums"
+          # --ignore-missing passes when no listed file is present, so require our entry first.
+          grep -q " $tgz\$" "$d/$sums"
+          (cd "$d" && sha256sum --check --ignore-missing --strict "$sums")
+          tar -xzf "$d/$tgz" -C "$d" gitleaks
           sudo install "$d/gitleaks" /usr/local/bin/gitleaks
       - run: gitleaks git --redact --no-banner --config .gitleaks.toml --log-opts=--all

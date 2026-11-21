@@ -5,8 +5,14 @@
 - Strict CSP consumers: no inline <style>, no eval, no innerHTML except through the consumer's `renderHtml` prop.
   Styling only via MUI `sx`/theme (consumer's nonce'd Emotion cache).
 - Theme tokens only: no hex colours, px radii or font sizes outside the theme (the Hermes design-system rule).
-- `npm run typecheck && npm test` must pass; `npm run build` regenerates `dist/`, which is committed on release.
-- Releases: bump package.json version + MUI_HERMES_CHAT_VERSION + CHANGELOG.md, rebuild dist, tag `v<x.y.z>`.
+- `npm run typecheck && npm test` must pass; `npm run build` writes `dist/`, which is NOT committed (CI builds
+  it; the npm package ships it).
+- Releases: bump the version in package.json + package-lock.json + `MUI_HERMES_CHAT_VERSION` (and its test) +
+  CHANGELOG.md, merge to main, tag `v<x.y.z>` on main. `.github/workflows/publish.yml` then publishes to npm with
+  provenance via trusted publishing (OIDC; no token anywhere) and skips a version already on npm.
+- One-time bootstrap: publish the first version by hand (`npm publish --access public`), then run
+  `npm trust github mui-hermes-chat --repo ejlevin1/mui-hermes-chat --file publish.yml --allow-publish`.
+  Never rename `publish.yml` (it is the registered trusted publisher).
 
 # Secrets guard
 - Run `npm run hooks` once per clone (sets `core.hooksPath=.githooks`).
