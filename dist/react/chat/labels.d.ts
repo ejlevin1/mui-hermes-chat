@@ -1,0 +1,41 @@
+/** Every user-visible string of `<HermesChat />` (own + the composer, tool and info areas) with English defaults. */
+import { type ComposerLabels } from "../composer/labels";
+import { type SessionInfoLabels } from "../info/SessionInfo";
+import { type ToolLabels } from "../tools/labels";
+export interface ChatOwnLabels {
+    newChat: string;
+    newChatTitle: string;
+    newChatBody: string;
+    newChatConfirm: string;
+    cancel: string;
+    startOverFailed: string;
+    earlierConversations: string;
+    loadingEarlier: string;
+    startOfConversation: string;
+    loadEarlier: string;
+    loadEarlierFailed: string;
+    retry: string;
+    changedNote: string;
+    replied: string;
+    chat: string;
+    chatOpen: string;
+    author: (name: string) => string;
+    commentary: string;
+    errorDefault: string;
+    copyCode: string;
+    copyCodeShort: string;
+    copiedCode: string;
+    approvalTitle: string;
+    approveOnce: string;
+    deny: string;
+    approvalSending: string;
+    approvalFailed: string;
+    approved: string;
+    denied: string;
+    approvalRejected: string;
+    expired: string;
+    expiresIn: (clock: string) => string;
+    messageList: string;
+}
+export type ChatLabels = ComposerLabels & ToolLabels & SessionInfoLabels & ChatOwnLabels;
+export declare const defaultChatLabels: ChatLabels;
