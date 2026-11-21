@@ -1,4 +1,4 @@
-/** Round "jump to latest" button in the composer area; the x-chat scrollToBottom slot only publishes list scroll state to it. */
+/** Round "jump to latest" button: `JumpToLatest` (public, standalone) and the composer-area split (publisher + button). */
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -32,9 +32,14 @@ export function JumpButton({ labels, state }: { labels?: Partial<ComposerLabels>
   );
 }
 
-/** Reads the list scroll state (only available inside the message list) and hands it to `publish`; renders nothing. */
-export function JumpToLatest({ publish }: { labels?: Partial<ComposerLabels>; publish?: (s: JumpState) => void }) {
+/** Public, self-contained: reads the list scroll state and renders the button (usable as any ChatBox scrollToBottom slot). */
+export function JumpToLatest({ labels }: { labels?: Partial<ComposerLabels> }) {
+  return <JumpButton labels={labels} state={useMessageListContext()} />;
+}
+
+/** Module-only: reads the list scroll state (only available inside the message list) and hands it to `publish`; renders nothing. */
+export function JumpStatePublisher({ publish }: { publish: (s: JumpState) => void }) {
   const { isAtBottom, unseenMessageCount, scrollToBottom } = useMessageListContext();
-  useEffect(() => { publish?.({ isAtBottom, unseenMessageCount, scrollToBottom }); }, [publish, isAtBottom, unseenMessageCount, scrollToBottom]);
+  useEffect(() => { publish({ isAtBottom, unseenMessageCount, scrollToBottom }); }, [publish, isAtBottom, unseenMessageCount, scrollToBottom]);
   return null;
 }

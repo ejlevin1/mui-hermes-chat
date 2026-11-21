@@ -2,7 +2,7 @@
 import { useSyncExternalStore, type ComponentType } from "react";
 import Box from "@mui/material/Box";
 import { ChatComposer } from "./ChatComposer";
-import { JumpButton, JumpToLatest, type JumpState } from "./JumpToLatest";
+import { JumpButton, JumpStatePublisher, type JumpState } from "./JumpToLatest";
 import type { ComposerLabels } from "./labels";
 
 export function composerSlots(labels?: Partial<ComposerLabels>, maxMessage?: number) {
@@ -25,7 +25,7 @@ export function composerSlots(labels?: Partial<ComposerLabels>, maxMessage?: num
       </Box>
     );
   };
-  const Jump: ComponentType = () => <JumpToLatest labels={labels} publish={publish} />;
+  const Jump: ComponentType = () => <JumpStatePublisher publish={publish} />;
   return {
     slots: { composerRoot: Composer, scrollToBottom: Jump },
     slotProps: {},
