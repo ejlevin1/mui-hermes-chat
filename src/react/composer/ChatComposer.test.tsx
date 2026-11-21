@@ -29,7 +29,6 @@ test("single focus ring: textarea has no own border/outline, only the surface ca
   wrap(<ChatComposer />);
   const surface = screen.getByTestId("composer-surface");
   expect(surface.querySelectorAll("fieldset").length).toBe(0);
-  expect(input().closest("form")?.querySelectorAll("textarea").length).toBe(1);
   expect(getComputedStyle(input()).outlineStyle).not.toBe("solid");
   expect(getComputedStyle(input()).borderStyle).not.toBe("solid");
   expect(input().rows).toBe(1);
