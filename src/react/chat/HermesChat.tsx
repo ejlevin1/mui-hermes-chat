@@ -21,7 +21,7 @@ import { useTheme, type Theme } from "@mui/material/styles";
 import { visuallyHidden } from "@mui/utils";
 import { ChatBox } from "@mui/x-chat";
 import { useChat, useMessageContext } from "@mui/x-chat/headless";
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, forwardRef, useContext, useLayoutEffect, useMemo, useRef, useState, type HTMLAttributes, type ReactNode } from "react";
 import { AGENT_AUTHOR_ID, USER_AUTHOR_ID, hermesChatAdapter, toChatMessages, type StreamLostCode } from "../../adapter/adapter";
 import { sendApproval, startOver } from "../../core/transport";
 import type { ChatUrls, CsrfSource, HermesMessage, HermesToolCall, Participant, SessionInfo, Target } from "../../core/types";
@@ -66,6 +66,8 @@ export interface HermesChatProps {
   resetKey?: string | number;
   /** Minimum gap on the side opposite a bubble's avatar (CSS length or px). Default: the avatar column (avatar + gutter). */
   bubbleOppositeGap?: number | string;
+  /** Agent messages: `plain` (default) = text on the page background, no bubble; `filled` = the grey bubble. User messages are always filled. */
+  agentBubble?: "plain" | "filled";
 }
 
 type PanelProps = HermesChatProps & { fitHeight: boolean };
@@ -79,7 +81,7 @@ const GUTTER_SPACING = 1;
 export const AVATAR_COLUMN = (theme: Theme) => theme.spacing(AVATAR_SPACING + GUTTER_SPACING);
 
 /** x-chat message slot styling: content-sized bubbles, capped at thread − own column − opposite column. */
-export function bubbleSlotProps(theme: Theme, oppositeGap?: number | string) {
+export function bubbleSlotProps(theme: Theme, oppositeGap?: number | string, agentBubble: "plain" | "filled" = "plain") {
   const gap = oppositeGap === undefined ? AVATAR_COLUMN(theme) : typeof oppositeGap === "number" ? `${oppositeGap}px` : oppositeGap;
   return {
     messageRoot: {
@@ -89,6 +91,9 @@ export function bubbleSlotProps(theme: Theme, oppositeGap?: number | string) {
         "&&.MuiChatMessage-roleUser": { gridTemplateColumns: `minmax(0, 1fr) ${theme.spacing(AVATAR_SPACING)}` },
         "&.MuiChatMessage-roleUser .MuiChatMessage-content": { justifySelf: "end" },
         "&.MuiChatMessage-roleUser .MuiChatMessage-bubble": { bgcolor: "primary.main", color: "primary.contrastText" },
+        // D2: parts of one message (Steps, Thinking, Approval, reply, ...) are 12px apart; the inline-meta nodes are not parts
+        "& .MuiChatMessage-bubble > * + *:not(.MuiChatMessage-inlineMetaSpacer):not(.MuiChatMessage-inlineMeta)": { marginTop: theme.spacing(1.5) },
+        ...(agentBubble === "plain" ? plainAgent(theme) : {}),
       },
     },
     messageContent: {
@@ -102,6 +107,17 @@ export function bubbleSlotProps(theme: Theme, oppositeGap?: number | string) {
         "& .MuiChatMessage-bubble": { borderRadius: 1, padding: theme.spacing(1, 1.5), bgcolor: "action.hover", color: "text.primary" },
       },
     },
+  };
+}
+
+/** D1/D3: agent messages without a bubble: full width, no fill/padding/radius, meta as a caption under the content. */
+function plainAgent(theme: Theme) {
+  const agent = "&:not(.MuiChatMessage-roleUser)";
+  return {
+    [`${agent} .MuiChatMessage-content`]: { width: "100%" },
+    [`${agent} .MuiChatMessage-bubble`]: { bgcolor: "transparent", padding: 0, borderRadius: 0, width: "100%" },
+    [`${agent} .MuiChatMessage-inlineMetaSpacer`]: { display: "none" },
+    [`${agent} .MuiChatMessage-inlineMeta`]: { position: "static", display: "flex", justifyContent: "flex-start", marginTop: theme.spacing(0.5), color: "text.secondary" },
   };
 }
 
@@ -122,8 +138,11 @@ function HiddenAuthor({ children }: { children?: ReactNode }) {
   return <Box component="span" sx={visuallyHidden}>{children}</Box>;
 }
 
-/** Paging status above the list: loading row, error + Retry, keyboard "Load earlier", start marker. */
-function HistoryBar({ labels }: { labels: ChatLabels }) {
+const LabelsContext = createContext<ChatLabels>(defaultChatLabels);
+
+/** Paging status as the first item inside the scrolling list: loading row, error + Retry, keyboard "Load earlier", start marker. */
+function HistoryBar() {
+  const labels = useContext(LabelsContext);
   const { messages, hasMoreHistory, isLoadingHistory, error, loadMoreHistory } = useChat();
   if (!messages.length) return null;
   const failed = error?.source === "history";
@@ -146,9 +165,9 @@ function HistoryBar({ labels }: { labels: ChatLabels }) {
 }
 
 function Panel(props: PanelProps) {
-  const { urls, target, csrf, history, renderHtml, participants, session, maxMessage, notice, linkedNote, changed, hasEarlier, earlierHref, onTurnEnd, onStreamLost, resetKey, toolbarActions, fit, fitHeight, bubbleOppositeGap } = props;
+  const { urls, target, csrf, history, renderHtml, participants, session, maxMessage, notice, linkedNote, changed, hasEarlier, earlierHref, onTurnEnd, onStreamLost, resetKey, toolbarActions, fit, fitHeight, bubbleOppositeGap, agentBubble = "plain" } = props;
   const theme = useTheme();
-  const bubbles = useMemo(() => bubbleSlotProps(theme, bubbleOppositeGap), [theme, bubbleOppositeGap]);
+  const bubbles = useMemo(() => bubbleSlotProps(theme, bubbleOppositeGap, agentBubble), [theme, bubbleOppositeGap, agentBubble]);
   const labels = useMemo<ChatLabels>(() => ({ ...defaultChatLabels, ...props.labels }), [props.labels]);
   const [epoch, setEpoch] = useState(0);
   // A new `resetKey` re-reads `history` (also after New chat) and remounts the ChatBox below.
@@ -183,12 +202,26 @@ function Panel(props: PanelProps) {
     [urls.approval, target, csrf, renderHtml, labels],
   );
   const composer = useMemo(() => composerSlots(labels, maxMessage), [labels, maxMessage]);
+  // D5: the history bar scrolls with the thread: first child of the list content (replaces x-chat's styled content: flex column, 8px block padding)
+  const listSlots = useMemo(
+    () => ({
+      messageListContent: forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement> & { ownerState?: unknown }>(function ListContent({ children, ownerState: _o, ...rest }, ref) {
+        return (
+          <Box ref={ref} {...rest} sx={{ display: "flex", flexDirection: "column", paddingBlock: 1, boxSizing: "border-box" }}>
+            <HistoryBar />
+            {children}
+          </Box>
+        );
+      }),
+    }),
+    [],
+  );
   const slots = useMemo(
     () => ({
       ...composer.slots,
       messageAvatar: avatarSlot(participants),
       messageAuthorName: HiddenAuthor,
-      conversationHeader: () => <HistoryBar labels={labels} />,
+      conversationHeader: () => null,
     }),
     [composer, participants, labels],
   );
@@ -243,6 +276,7 @@ function Panel(props: PanelProps) {
           {error && <Alert severity="error" onClose={() => setError("")}>{error}</Alert>}
         </Box>
       )}
+      <LabelsContext.Provider value={labels}>
       <ChatBox
         key={`${epoch}:${resetKey ?? ""}`}
         adapter={adapter}
@@ -259,11 +293,12 @@ function Panel(props: PanelProps) {
         onFinish={() => { setSaid((s) => (s.endsWith("​") ? labels.replied : labels.replied + "​")); onTurnEnd?.(); }}
         slots={slots}
         slotProps={{
-          messageList: { autoScroll: true, slotProps: { messageListScroller: { ref: scroller, "aria-live": "off", "aria-label": labels.messageList } } },
+          messageList: { autoScroll: true, slots: listSlots, slotProps: { messageListScroller: { ref: scroller, "aria-live": "off", "aria-label": labels.messageList } } },
           ...bubbles,
         } as never}
         sx={{ flex: "0 1 auto", minHeight: 0, height: "auto", border: 0, bgcolor: "transparent" }}
       />
+      </LabelsContext.Provider>
       <Box role="status" data-testid="hermes-said" sx={visuallyHidden}>{said}</Box>
       <ToolDetailDrawer call={tool} open={!!tool} onClose={() => setTool(null)} labels={labels} />
       <Dialog open={confirming} onClose={() => setConfirming(false)}>
