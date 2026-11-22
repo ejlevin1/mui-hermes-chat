@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.3 (2026-11-22)
+- Agent messages render without a bubble (prop `agentBubble="filled"` restores it); 12px between message parts; agent timestamp under the message; "1 step"; start of conversation scrolls with the thread. User bubbles unchanged.
+
 ## 0.3.2 (2026-11-21)
 - A dropped turn stream (network, or the server's `detached` idle cap) shows 'still working' instead of 'send it again'; `onStreamLost` and `resetKey` props.
 
