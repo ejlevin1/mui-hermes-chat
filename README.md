@@ -50,6 +50,7 @@ import { HermesChat } from "mui-hermes-chat";
 | `mode?` | `inline \| sheet \| auto` | `auto` = sheet on phones |
 | `fit?` | `{ minHeight?, bottomGap? }` | fit the card to the viewport (theme spacing units) |
 | `bubbleOppositeGap?` | `number \| string` | min gap on the side opposite the avatar; default avatar size + gutter |
+| `agentBubble?` | `"none" \| "filled"` | agent messages render without a bubble by default; `"filled"` restores the grey bubble |
 | `toolbarActions?` | `ReactNode` | extra toolbar content |
 | `onStreamLost?` | `(info: { code: "network" \| "detached" }) => void` | called once when a turn's stream is lost; see [Long turns](#long-turns) |
 | `resetKey?` | `string \| number` | when it changes after mount, the conversation re-initialises from the current `history` |
