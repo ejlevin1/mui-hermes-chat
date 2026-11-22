@@ -137,3 +137,10 @@ test("json tree shows strings as text, never HTML, and collapses", () => {
   fireEvent.click(screen.getByRole("button", { name: "deep {1}" }));
   expect(screen.getByRole("button", { name: "x {1}" })).toBeTruthy();
 });
+
+test("steps label: 1 step, otherwise n steps", async () => {
+  const { defaultToolLabels } = await import("./labels");
+  expect(defaultToolLabels.steps(1)).toBe("1 step");
+  expect(defaultToolLabels.steps(0)).toBe("0 steps");
+  expect(defaultToolLabels.steps(2)).toBe("2 steps");
+});
