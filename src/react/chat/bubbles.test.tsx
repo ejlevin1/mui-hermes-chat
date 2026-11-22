@@ -23,7 +23,7 @@ describe("bubbleSlotProps", () => {
     expect(r["&.MuiChatMessage-roleUser .MuiChatMessage-content"]).toEqual({ justifySelf: "end" });
     expect(r["&.MuiChatMessage-roleUser .MuiChatMessage-bubble"]).toEqual({ bgcolor: "primary.main", color: "primary.contrastText" });
     expect(content().justifySelf).toBe("start");
-    expect((content()["& .MuiChatMessage-bubble"] as Record<string, unknown>).bgcolor).toBe("action.hover");
+    expect((bubbleSlotProps(theme, undefined, "filled").messageContent.sx as Sx)["& .MuiChatMessage-bubble"]).toMatchObject({ bgcolor: "action.hover", padding: theme.spacing(1, 1.5) });
   });
   test("avatar track stays fixed (not auto) so grouped follow-up messages keep their column", () => {
     const r = root();
@@ -69,9 +69,62 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 describe("bubble radius", () => {
   test("agent and user bubbles use theme.shape.borderRadius px, not its square", async () => {
     const theme = createTheme({ shape: { borderRadius: 6 } });
-    const { container } = render(<ThemeProvider theme={theme}><HermesChat {...props} /></ThemeProvider>);
+    const { container } = render(<ThemeProvider theme={theme}><HermesChat {...props} agentBubble="filled" /></ThemeProvider>);
     await waitFor(() => expect(container.querySelectorAll(".MuiChatMessage-bubble").length).toBe(2));
     const radii = [...container.querySelectorAll(".MuiChatMessage-bubble")].map((b) => getComputedStyle(b).borderRadius);
     expect(radii).toEqual(["6px", "6px"]);
+  });
+});
+
+describe("plain agent messages", () => {
+  const bubbles = (c: HTMLElement) => [...c.querySelectorAll(".MuiChatMessage-bubble")] as HTMLElement[];
+  const renderChat = async (extra: Partial<HermesChatProps> = {}, p: HermesChatProps = props) => {
+    const r = render(<ThemeProvider theme={createTheme()}><HermesChat {...p} {...extra} /></ThemeProvider>);
+    await waitFor(() => expect(bubbles(r.container).length).toBe(p.history.messages.length));
+    return r;
+  };
+  test("default: agent bubble is transparent with no padding; user bubble keeps primary fill + padding", async () => {
+    const { container } = await renderChat();
+    const [user, agent] = bubbles(container).map((b) => getComputedStyle(b));
+    expect(agent.backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    expect(agent.padding).toBe("0px");
+    expect(user.backgroundColor).toBe("rgb(25, 118, 210)");
+    expect(user.padding).toBe("8px 12px");
+  });
+  test('agentBubble="filled" reproduces the 0.3.2 look', async () => {
+    const { container } = await renderChat({ agentBubble: "filled" });
+    const agent = getComputedStyle(bubbles(container)[1]);
+    expect(agent.backgroundColor).not.toBe("rgba(0, 0, 0, 0)");
+    expect(agent.padding).toBe("8px 12px");
+  });
+  test("12px between a Steps card and the reply text; none above the first part", async () => {
+    const p: HermesChatProps = { ...props, history: { ...props.history, messages: [
+      { id: "2", role: "assistant", text: "done", html: "<p>done</p>", tools: [{ id: "a", name: "terminal", state: "done" }] } as never,
+    ] } };
+    const { container } = await renderChat({}, p);
+    const parts = [...bubbles(container)[0].children].filter((e) => !e.className.includes("inlineMeta"));
+    expect(parts.length).toBeGreaterThan(1);
+    expect(getComputedStyle(parts[0]).marginTop).not.toBe("12px");
+    expect(getComputedStyle(parts[1]).marginTop).toBe("12px");
+  });
+  test("agent meta renders after the content, left-aligned, as a caption", async () => {
+    const p: HermesChatProps = { ...props, history: { ...props.history, messages: [
+      { id: "2", role: "assistant", text: "hello", html: "<p>hello</p>", created: 1790000000 },
+    ] } };
+    const { container } = await renderChat({}, p);
+    const meta = container.querySelector(".MuiChatMessage-inlineMeta") as HTMLElement;
+    expect(meta).toBeTruthy();
+    const cs = getComputedStyle(meta);
+    expect(cs.position).toBe("static");
+    expect(cs.justifyContent).toBe("flex-start");
+    expect(cs.marginTop).toBe("4px");
+    expect(meta.compareDocumentPosition(bubbles(container)[0].firstElementChild!) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+  });
+  test("start-of-conversation is inside the scroll container", async () => {
+    const { container, getByText } = await renderChat();
+    const scroller = container.querySelector('[aria-label]') as HTMLElement;
+    const log = container.querySelector('[role="log"]') as HTMLElement;
+    expect(scroller).toBeTruthy();
+    expect(log.contains(getByText("Start of conversation"))).toBe(true);
   });
 });
