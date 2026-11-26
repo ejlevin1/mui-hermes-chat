@@ -5,6 +5,7 @@ export interface ToolLabels {
   stepsHeader: string; stepsProgress: (done: number, running: number) => string;
   request: string; response: string; copy: string; copied: string; close: string; argsClipped: string;
   noArgs: string; noResponse: string; more: (n: number) => string; details: string;
+  showFull: string; loadingFull: string; showFullFailed: string;
 }
 export const defaultToolLabels: ToolLabels = {
   running: "Running", done: "Done", failed: "Failed", showPreview: "Show preview", hidePreview: "Hide preview",
@@ -13,4 +14,5 @@ export const defaultToolLabels: ToolLabels = {
   request: "Request", response: "Response", copy: "Copy", copied: "Copied", close: "Close",
   argsClipped: "Arguments were clipped by the server.", noArgs: "No arguments.", noResponse: "No response yet.",
   more: (n) => `… ${n} more`, details: "Tool details",
+  showFull: "Show full", loadingFull: "Loading…", showFullFailed: "Could not load the full text.",
 };

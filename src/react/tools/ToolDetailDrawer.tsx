@@ -5,6 +5,7 @@ import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import Drawer from "@mui/material/Drawer";
 import IconButton from "@mui/material/IconButton";
+import Link from "@mui/material/Link";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import Tooltip from "@mui/material/Tooltip";
@@ -25,6 +26,8 @@ export interface ToolDetailDrawerProps {
   open: boolean;
   onClose: () => void;
   labels?: Partial<ToolLabels>;
+  /** Fetch the unclipped result (server-redacted plain text); only offered when the call has `result_clipped`. */
+  onShowFull?: (call: HermesToolCall) => Promise<string>;
 }
 
 function CopyButton({ text, labels }: { text: string; labels: ToolLabels }) {
@@ -38,8 +41,14 @@ function CopyButton({ text, labels }: { text: string; labels: ToolLabels }) {
   );
 }
 
-function Body({ call, onClose, l }: { call: HermesToolCall; onClose: () => void; l: ToolLabels }) {
+function Body({ call, onClose, l, onShowFull }: { call: HermesToolCall; onClose: () => void; l: ToolLabels; onShowFull?: (call: HermesToolCall) => Promise<string> }) {
   const [tab, setTab] = useState<"request" | "response">("request");
+  const [full, setFull] = useState<{ state: "idle" | "loading" | "failed" | "done"; text?: string }>({ state: "idle" });
+  const loadFull = () => {
+    setFull({ state: "loading" });
+    onShowFull!(call).then((text) => setFull({ state: "done", text }), () => setFull({ state: "failed" }));
+  };
+  const result = full.state === "done" ? full.text ?? "" : call.result_preview;
   const status = statusOf(call);
   const dur = ToolRowFormat.duration(call.duration_s);
   const statusText = status === "failed" ? l.failed : status === "running" ? l.running : l.done;
@@ -68,10 +77,18 @@ function Body({ call, onClose, l }: { call: HermesToolCall; onClose: () => void;
             {call.args_clipped && <Typography variant="caption" color="warning.main">{l.argsClipped}</Typography>}
             {hasArgs && <CopyButton text={argsJson} labels={l} />}
           </>
-        ) : call.result_preview ? (
+        ) : result ? (
           <>
-            <Typography variant="body2" component="pre" sx={{ fontFamily: "monospace", whiteSpace: "pre-wrap", overflowWrap: "anywhere", m: 0 }}>{call.result_preview}</Typography>
-            <CopyButton text={call.result_preview} labels={l} />
+            <Typography variant="body2" component="pre" sx={{ fontFamily: "monospace", whiteSpace: "pre-wrap", overflowWrap: "anywhere", m: 0 }}>{result}</Typography>
+            {onShowFull && call.result_clipped && full.state !== "done" && (
+              full.state === "loading" ? <Typography variant="caption" color="text.secondary" role="status">{l.loadingFull}</Typography> : (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  {full.state === "failed" && <Typography variant="caption" color="error" role="alert">{l.showFullFailed}</Typography>}
+                  <Link component="button" type="button" variant="caption" onClick={loadFull}>{l.showFull}</Link>
+                </Box>
+              )
+            )}
+            <CopyButton text={result} labels={l} />
           </>
         ) : (
           <Typography variant="body2" color="text.secondary">{l.noResponse}</Typography>
@@ -81,12 +98,12 @@ function Body({ call, onClose, l }: { call: HermesToolCall; onClose: () => void;
   );
 }
 
-export function ToolDetailDrawer({ call, open, onClose, labels }: ToolDetailDrawerProps) {
+export function ToolDetailDrawer({ call, open, onClose, labels, onShowFull }: ToolDetailDrawerProps) {
   const l = { ...defaultToolLabels, ...labels };
   const theme = useTheme();
   const small = useMediaQuery(theme.breakpoints.down("md"));
   if (!call) return null;
-  const body = <Body key={call.id} call={call} onClose={onClose} l={l} />;
+  const body = <Body key={call.id} call={call} onClose={onClose} l={l} onShowFull={onShowFull} />;
   return small ? (
     <Dialog fullScreen open={open} onClose={onClose} aria-label={l.details}>{body}</Dialog>
   ) : (
