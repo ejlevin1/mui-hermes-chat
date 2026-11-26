@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0 (2026-11-26)
+- New read-only `HermesTranscript`: an agent session's messages, tool steps, thinking and subagent groups, following a live stream and paging older history; no composer, approvals or start over.
+- `liveSource({ url, messagesUrl })`: SSE with Last-Event-ID / `after` resume and backward history pages.
+- Configurable participants, including a subagent participant.
+- "Show full" for server-capped fields (`onShowFull`, optional `ToolDetailDrawer.onShowFull`).
+- Contract `hermes-transcript/1` (`TranscriptMessage`, `mergeTranscript`, `maxSeq`); `HermesToolCall.result_clipped`.
+- `HermesChat` unchanged; nothing breaking.
+
 ## 0.3.3 (2026-11-22)
 - Agent messages render without a bubble (prop `agentBubble="filled"` restores it); 12px between message parts; agent timestamp under the message; "1 step"; start of conversation scrolls with the thread. User bubbles unchanged.
 
