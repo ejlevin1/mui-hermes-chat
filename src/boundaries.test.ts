@@ -31,7 +31,8 @@ test("every contract section 5 name is exported from the root", async () => {
   const api = (await import("./index")) as Record<string, unknown>;
   const values = ["parseChatEvents", "CHAT_EVENTS_CONTRACT", "runTurn", "sendApproval", "startOver", "fetchHistoryPage",
     "ChatHttpError", "initials", "avatarColor", "ToolFamily", "hermesChatAdapter", "HermesChat", "ParticipantAvatar",
-    "ToolRow", "ToolStepGroup", "ToolDetailDrawer", "SessionInfoDrawer", "ChatComposer", "Approval", "MUI_HERMES_CHAT_VERSION"];
+    "ToolRow", "ToolStepGroup", "ToolDetailDrawer", "SessionInfoDrawer", "ChatComposer", "Approval", "MUI_HERMES_CHAT_VERSION",
+    "TRANSCRIPT_CONTRACT", "mergeTranscript", "maxSeq", "liveSource", "HermesTranscript", "defaultTranscriptLabels"];
   for (const n of values) expect(api[n], n).toBeDefined();
   const idx = readFileSync(join(SRC, "index.ts"), "utf8");
   expect(idx).toMatch(/export \* from "\.\/core"/);
