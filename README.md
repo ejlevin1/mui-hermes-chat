@@ -110,6 +110,23 @@ Read model carries the newest page (≤30 user turns) as `history`. `GET <urls.m
 answers 400 `bad_cursor`, anything not allowed 404. The client dedupes by message `id`. Messages are
 `HermesMessage { id, role, text, html, created?, tools? }`.
 
+## Read-only transcript
+`HermesTranscript` shows one agent attempt (messages, Steps card with tool rows and detail drawer, thinking, jump to
+latest, older history on scroll) without composer, approvals or start over. Transcript text is never rendered as HTML.
+
+```tsx
+import { HermesTranscript, liveSource } from "mui-hermes-chat";
+
+const feed = liveSource({ url: "/api/live/stream", messagesUrl: "/api/live/messages", params: { attempt: "run:5367" } });
+
+<HermesTranscript feed={feed} onShowFull={({ message, tool, field }) => openFull(message, tool, field)} />;
+```
+
+Contract `hermes-transcript/1`: every message is a `HermesMessage` (`html` always `""`) plus
+`seq` (> 0, increasing, the SSE `id:`), `source` (`"hermes_session" | "devx_lane"`), `attempt`, `session`,
+`subagent_of?` (id of the spawning tool call), `reasoning?`, `text_clipped?`, `reasoning_clipped?`, `model?`;
+tool calls gain `result_clipped?`. A message whose `id` is already held replaces it (`mergeTranscript`).
+
 ## Use only the core / adapter
 Everything is exported from the root. Without React: `parseChatEvents`, `runTurn`, `sendApproval`, `startOver`,
 `fetchHistoryPage`, `initials`, `avatarColor` (`src/core` imports no React or MUI). With your own UI on x-chat:
