@@ -12,6 +12,8 @@ export interface HermesToolCall {
   args_clipped?: boolean;
   duration_s?: number;
   result_preview?: string;
+  /** result_preview was cut at the server cap. */
+  result_clipped?: boolean;
 }
 
 export interface HermesMessage {
