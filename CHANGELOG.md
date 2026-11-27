@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.0 (2026-11-27)
+- Transcript system rows: dividers and event rows (`role: "system"`, `kind: "divider" | "event"`, `status`, `ts`), `renderStatus` slot, per-message `participant` override; additive, old servers render unchanged.
+- `Role` gains `"system"`; labels gain `dividerLabel` and `eventTime`.
+
 ## 0.4.0 (2026-11-26)
 - New read-only `HermesTranscript`: an agent session's messages, tool steps, thinking and subagent groups, following a live stream and paging older history; no composer, approvals or start over.
 - `liveSource({ url, messagesUrl })`: SSE with Last-Event-ID / `after` resume and backward history pages.

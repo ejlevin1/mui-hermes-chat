@@ -127,6 +127,12 @@ Contract `hermes-transcript/1`: every message is a `HermesMessage` (`html` alway
 `subagent_of?` (id of the spawning tool call), `reasoning?`, `text_clipped?`, `reasoning_clipped?`, `model?`;
 tool calls gain `result_clipped?`. A message whose `id` is already held replaces it (`mergeTranscript`).
 
+System rows (additive, 0.5.0): a message with `role: "system"` is a row, not a bubble. `kind: "divider"` draws a
+full-width rule with a centred caption (`text`); `kind: "event"` (or no kind) draws a small muted line: time (`ts`),
+`renderStatus(status)` (default: the raw string), then `text` (plain text). System rows carry no tools and are never
+subagent groups. `participant` on a user/assistant message overrides that row's display name. Labels: `dividerLabel`,
+`eventTime`.
+
 ## Use only the core / adapter
 Everything is exported from the root. Without React: `parseChatEvents`, `runTurn`, `sendApproval`, `startOver`,
 `fetchHistoryPage`, `initials`, `avatarColor` (`src/core` imports no React or MUI). With your own UI on x-chat:
