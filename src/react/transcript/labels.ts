@@ -13,6 +13,8 @@ export interface TranscriptOwnLabels {
   empty: string;
   transcript: string;
   loadFailed: string;
+  dividerLabel: (text: string) => string;
+  eventTime: (ts: number) => string;
 }
 
 type Reused = Pick<ChatOwnLabels, "loadingEarlier" | "startOfConversation" | "loadEarlier" | "loadEarlierFailed" | "retry" | "thinking" | "thoughtFor" | "thoughts" | "showAll" | "showLess" | "author" | "errorDefault" | "copyCode" | "copyCodeShort" | "copiedCode" | "commentary" | "messageList">;
@@ -49,4 +51,6 @@ export const defaultTranscriptLabels: TranscriptLabels = {
   empty: "No messages yet.",
   transcript: "Transcript",
   loadFailed: "Could not load the transcript.",
+  dividerLabel: (text) => text,
+  eventTime: (ts) => new Date(ts * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
 };

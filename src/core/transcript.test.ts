@@ -54,6 +54,16 @@ describe("maxSeq", () => {
   });
 });
 
+describe("system rows", () => {
+  it("upsert by id like any message", () => {
+    const d = { ...m("d1", 1), role: "system" as const, kind: "divider" as const, text: "Round 1" };
+    const out = mergeTranscript([m("a", 0), d], [{ ...d, text: "Round 2", seq: 5 }], "append");
+    expect(out.map((x) => x.id)).toEqual(["a", "d1"]);
+    expect(out[1].text).toBe("Round 2");
+    expect(maxSeq(out)).toBe(5);
+  });
+});
+
 describe("types", () => {
   it("TranscriptMessage is assignable to HermesMessage", () => {
     const t: HermesMessage = m("a", 1);
