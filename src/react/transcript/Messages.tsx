@@ -20,6 +20,7 @@ export interface Ctx {
   agentBubble: "plain" | "filled";
   /** subagent messages by the tool call id that spawned them */
   children: Map<string, TranscriptMessage[]>;
+  renderStatus?: (status: string) => ReactNode;
   onOpenTool: (call: HermesToolCall, message: string) => void;
   onShowFull?: (ref: { message: string; tool?: string; field: "text" | "reasoning" | "result" }) => Promise<string>;
 }
@@ -99,7 +100,9 @@ function Steps({ m, calls }: { m: TranscriptMessage; calls: HermesToolCall[] }) 
 export function MessageView({ m }: { m: TranscriptMessage }): ReactNode {
   const { participants, agentBubble, onShowFull, labels } = useCtx();
   const user = m.role === "user";
-  const who = user ? participants.user : participants.agent;
+  if (m.role === "system") return <SystemRow m={m} />;
+  const base = user ? participants.user : participants.agent;
+  const who = m.participant ? { ...base, name: m.participant, initials: undefined } : base;
   const calls = m.tools ?? [];
   const body: ReactNode[] = [];
   if (m.reasoning) body.push(<Full key="r" m={m} field="reasoning" text={m.reasoning} />);
@@ -121,6 +124,29 @@ export function MessageView({ m }: { m: TranscriptMessage }): ReactNode {
       >
         {body}
       </Box>
+    </Box>
+  );
+}
+
+export function SystemRow({ m }: { m: TranscriptMessage }): ReactNode {
+  const { labels, renderStatus } = useCtx();
+  if (m.kind === "divider") {
+    const rule = { flex: 1, minWidth: 0, borderTop: 1, borderColor: "divider" } as const;
+    return (
+      <Box data-testid="transcript-system" data-kind="divider" role="separator" aria-label={m.text} sx={{ display: "flex", alignItems: "center", gap: 1, px: 1.5, minWidth: 0 }}>
+        <Box aria-hidden sx={rule} />
+        <Typography variant="caption" color="text.secondary" noWrap title={m.text} sx={{ maxWidth: "70%", minWidth: 0 }}>{labels.dividerLabel(m.text)}</Typography>
+        <Box aria-hidden sx={rule} />
+      </Box>
+    );
+  }
+  return (
+    <Box data-testid="transcript-system" data-kind="event" sx={{ display: "flex", alignItems: "baseline", gap: 1, px: 1.5, minWidth: 0 }}>
+      <Typography variant="caption" color="text.secondary" component="div" sx={{ ...wrap, display: "flex", alignItems: "baseline", gap: 1, flexWrap: "wrap" }}>
+        {m.ts !== undefined && <time dateTime={new Date(m.ts * 1000).toISOString()}>{labels.eventTime(m.ts)}</time>}
+        {m.status ? <span data-testid="transcript-system-status">{renderStatus ? renderStatus(m.status) : m.status}</span> : null}
+        {m.text ? <span>{m.text}</span> : null}
+      </Typography>
     </Box>
   );
 }

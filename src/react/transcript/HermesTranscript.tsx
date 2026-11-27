@@ -6,7 +6,7 @@ import Chip from "@mui/material/Chip";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import { keyframes } from "@mui/system";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { maxSeq, mergeTranscript, type TranscriptFeed, type TranscriptMessage, type TranscriptStatus } from "../../core/transcript";
 import type { HermesToolCall, Participant } from "../../core/types";
 import { ParticipantAvatar } from "../avatar/ParticipantAvatar";
@@ -26,6 +26,8 @@ export interface HermesTranscriptProps {
   fit?: { minHeight?: number; bottomGap?: number };
   agentBubble?: "plain" | "filled";
   emptyText?: string;
+  /** How an event row draws its `status`; default: the raw string. */
+  renderStatus?: (status: string) => ReactNode;
 }
 
 const pulse = keyframes`0%,100%{opacity:1}50%{opacity:.35}`;
@@ -41,7 +43,7 @@ export function layout(list: TranscriptMessage[]): { rows: Row[]; children: Map<
   const rows: Row[] = [];
   for (const m of list) {
     const p = m.subagent_of;
-    if (!p) { rows.push({ kind: "message", m }); continue; }
+    if (m.role === "system" || !p) { rows.push({ kind: "message", m }); continue; }
     if (known.has(p)) { children.set(p, [...(children.get(p) ?? []), m]); continue; }
     const last = rows[rows.length - 1];
     if (last && last.kind === "orphans" && last.parent === p) last.ms.push(m);
@@ -50,7 +52,7 @@ export function layout(list: TranscriptMessage[]): { rows: Row[]; children: Map<
   return { rows, children };
 }
 
-export function HermesTranscript({ feed, participants, live = true, onShowFull, onStatus, labels: lp, fit, agentBubble = "plain", emptyText }: HermesTranscriptProps) {
+export function HermesTranscript({ feed, participants, live = true, onShowFull, onStatus, labels: lp, fit, agentBubble = "plain", emptyText, renderStatus }: HermesTranscriptProps) {
   const labels = useMemo<TranscriptLabels>(() => ({ ...defaultTranscriptLabels, ...lp }), [lp]);
   const [messages, setMessages] = useState<TranscriptMessage[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -150,10 +152,10 @@ export function HermesTranscript({ feed, participants, live = true, onShowFull, 
 
   const { rows, children } = useMemo(() => layout(messages), [messages]);
   const ctx = useMemo<Ctx>(() => ({
-    labels, participants, agentBubble, children,
+    labels, participants, agentBubble, children, renderStatus,
     onOpenTool: (call, message) => setTool({ call, message }),
     onShowFull,
-  }), [labels, participants, agentBubble, children, onShowFull]);
+  }), [labels, participants, agentBubble, children, renderStatus, onShowFull]);
 
   // keep the open drawer's call current when the message is re-sent
   const openCall = useMemo(() => {

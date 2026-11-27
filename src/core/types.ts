@@ -16,12 +16,22 @@ export interface HermesToolCall {
   result_clipped?: boolean;
 }
 
+export type Role = "user" | "assistant" | "system";
+
 export interface HermesMessage {
   id: string;
-  role: "user" | "assistant";
+  role: Role;
   text: string;
   html: string;
   created?: number;
+  /** Only with role "system": a divider rule or an event line. */
+  kind?: "divider" | "event";
+  /** Optional status key an event row reports (opaque string). */
+  status?: string;
+  /** Per-message display name override (user/assistant rows). */
+  participant?: string;
+  /** Epoch seconds (shown on event rows). */
+  ts?: number;
   tools?: HermesToolCall[];
 }
 
